@@ -60,7 +60,7 @@ void findCountryNameByCode(std::string enteredCountryCode, std::unordered_map<st
 
 int main()
 {
-    std::unordered_map<std::string, std::string> countryCodes = {
+    std::unordered_map<std::string, std::string> countryCodeAndNames = {
         {"IN", "India"},
         {"US", "United States of America"},
         {"NZ", "New Zealand"},
@@ -109,7 +109,7 @@ int main()
                 }
                 else
                 {
-                    findCountryNameByCode(countryCode, countryCodes);
+                    findCountryNameByCode(countryCode, countryCodeAndNames);
                 }
             }
             break;
