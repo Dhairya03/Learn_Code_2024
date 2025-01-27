@@ -1,6 +1,6 @@
 using System;
 
-class MyClass {
+class SubArrayMeanFloorFinder {
     static void Main(string[] args) {
         var userInput = ReadArrayInput();
         int totalArrayElements = userInput[0];

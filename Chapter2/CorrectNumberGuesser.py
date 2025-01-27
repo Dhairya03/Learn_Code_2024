@@ -1,9 +1,12 @@
 import random
 
+RANGE_STARTING_NUMBER = 1
+RANGE_ENDING_NUMBER = 100
+
 main()
 
 def main():
-    correct_number = random.randint(1,100)
+    correct_number = random.randint(RANGE_STARTING_NUMBER, RANGE_ENDING_NUMBER)
     is_correct_number_guessed = False
     number_of_guesses = 0
     while not is_correct_number_guessed:
@@ -19,7 +22,7 @@ def get_user_guess():
     return int(user_input_number)
 
 def is_valid_guess(guessed_number):
-    return guessed_number.isdigit() and 1<=int(guessed_number)<=100
+    return (guessed_number.isdigit() and (RANGE_STARTING_NUMBER <= int(guessed_number) <= RANGE_ENDING_NUMBER))
 
 def check_user_guess(user_input_number, correct_number):
     is_correct_user_guess = false
@@ -30,4 +33,3 @@ def check_user_guess(user_input_number, correct_number):
     else:
         is_correct_user_guess = true
     return is_correct_user_guess
-        

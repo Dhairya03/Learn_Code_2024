@@ -35,5 +35,4 @@ public class CustomerDataExporter
         }
         return stringBuilder.ToString();
     }
-
 } 
