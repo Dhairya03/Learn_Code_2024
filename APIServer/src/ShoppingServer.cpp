@@ -24,7 +24,7 @@ ShoppingServer::~ShoppingServer() {
 void ShoppingServer::connectDatabase() {
     conn = mysql_init(0);
     if (conn) {
-        conn = mysql_real_connect(conn, "localhost", "root", "password", "shopping_db", 3306, NULL, 0);
+        conn = mysql_real_connect(conn, "localhost", "root", "your_new_password", "testdb", 3306, NULL, 0);
         if (conn) {
             std::cout << "Database connected successfully!" << std::endl;
         } else {

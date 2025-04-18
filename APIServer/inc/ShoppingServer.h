@@ -12,10 +12,10 @@ class ShoppingServer {
 private:
     MYSQL* conn;
     crow::SimpleApp app;
-    AuthHandler authHandler;
-    ProductHandler sproductHandler;
-    CartHandler cartHandler;
-    OrderHandler orderHandler;
+    AuthHandler* authHandler;
+    ProductHandler* productHandler;
+    CartHandler* cartHandler;
+    OrderHandler* orderHandler;
 
     void connectDatabase();
     void setupRoutes();
