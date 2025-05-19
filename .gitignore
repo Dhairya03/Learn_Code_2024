@@ -1,0 +1,8 @@
+ConsoleApp/lib/
+APIServer/lib/
+*
+!*/
+!*.cpp
+!*.h
+!*.md
+!*.gitignore
