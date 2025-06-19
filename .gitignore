@@ -1,0 +1,11 @@
+ConsoleApp/lib/
+APIServer/lib/
+NewsAggregationSystem/build
+NewsAggregationSystem/ClientApplication/lib/
+NewsAggregationSystem/ServerApplication/lib/
+*
+!*/
+!*.cpp
+!*.h
+!*.md
+!*.gitignore
