@@ -12,6 +12,7 @@ public:
                  const std::string& password,
                  const std::string& database);
     std::shared_ptr<sql::Connection> getConnection();
+    bool isConnected() const;
 
 private:
     std::shared_ptr<sql::Connection> conn;

@@ -1,17 +1,22 @@
-#include "Client.h"
-#include <iostream>
+// #include "MenuHandler.h"
+// #include "Client.h"
+
+// int main() {
+//     Client client("http://localhost:8080");
+//     MenuHandler menu(client);
+//     menu.run();
+//     return 0;
+// }
+
+// Entry point for the Client Application
+#include "Core/inc/Client.h"
+#include "Core/inc/Session.h"
+#include "Menu/inc/HomeMenu.h"
 
 int main() {
-    std::cout << "News Aggregation System" << std::endl;
-    std::cout << "1. Signup\n";
-    std::cout << "Choose an option: ";
-    
-    int choice;
-    std::cin >> choice;
-
-    if (choice == 1) {
-        signupUser();
-    }
-
+    Client client("http://localhost:8080");
+    Session session;
+    HomeMenu homeMenu(client, session);
+    homeMenu.display();
     return 0;
 }

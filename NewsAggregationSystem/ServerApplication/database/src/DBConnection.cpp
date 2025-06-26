@@ -22,3 +22,7 @@ bool DBConnection::connect(const std::string& host,
 std::shared_ptr<sql::Connection> DBConnection::getConnection() {
     return conn;
 }
+
+bool DBConnection::isConnected() const {
+    return conn != nullptr;
+}
