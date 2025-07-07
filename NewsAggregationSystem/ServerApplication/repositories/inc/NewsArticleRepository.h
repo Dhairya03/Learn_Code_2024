@@ -12,10 +12,7 @@ public:
     std::vector<NewsArticle> getAllArticles();
     std::vector<NewsArticle> getArticlesByCategory(const std::string& categoryName);
     bool saveArticle(const NewsArticle& article);
-    std::vector<NewsArticle> searchArticles(const std::string& keyword,
-        const std::string& startDate = "",
-        const std::string& endDate = "",
-        const std::string& sortField = "");
+    std::vector<NewsArticle> searchArticles(const std::string& query, const std::string& startDate, const std::string& endDate, const std::string& sort);
     std::vector<NewsArticle> getArticlesToday();
     std::vector<NewsArticle> getArticlesByDateAndCategory(const std::string& startDate, const std::string& endDate, const std::string& categoryName);
 

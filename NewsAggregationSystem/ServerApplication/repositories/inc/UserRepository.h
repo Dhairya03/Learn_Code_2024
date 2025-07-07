@@ -12,6 +12,7 @@ public:
     explicit UserRepository(std::shared_ptr<DBConnection> dbConn);
     bool createUser(const User& user);
     std::optional<User> findByEmailAndPassword(const std::string& email, const std::string& password);
+    User getUserById(int userId);
 
 private:
     std::shared_ptr<DBConnection> db;

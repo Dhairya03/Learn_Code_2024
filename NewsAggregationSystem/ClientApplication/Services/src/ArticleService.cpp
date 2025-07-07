@@ -24,3 +24,23 @@ std::string ArticleService::getTodayDate() {
         << now->tm_mday;
     return oss.str();
 }
+
+std::vector<nlohmann::json> ArticleService::searchArticles(const std::string& query, const std::string& startDate, const std::string& endDate, const std::string& sort) {
+    std::vector<nlohmann::json> results;
+    std::string endpoint = "/news/search?q=" + query;
+    if (!startDate.empty()) endpoint += "&start_date=" + startDate;
+    if (!endDate.empty()) endpoint += "&end_date=" + endDate;
+    if (!sort.empty()) endpoint += "&sort=" + sort;
+    std::string response = client.get(endpoint);
+    try {
+        auto articles = nlohmann::json::parse(response);
+        if (articles.is_array()) {
+            for (const auto& article : articles) {
+                results.push_back(article);
+            }
+        }
+    } catch (...) {
+        // Ignore parse errors for now
+    }
+    return results;
+}

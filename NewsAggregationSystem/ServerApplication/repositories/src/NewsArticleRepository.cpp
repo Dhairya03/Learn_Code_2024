@@ -210,53 +210,42 @@ bool NewsArticleRepository::saveArticle(const NewsArticle &article)
     }
 }
 
-std::vector<NewsArticle> NewsArticleRepository::searchArticles(const std::string &keyword,
-                                                               const std::string &startDate,
-                                                               const std::string &endDate,
-                                                               const std::string &sortField)
-{
+std::vector<NewsArticle> NewsArticleRepository::searchArticles(const std::string& query, const std::string& startDate, const std::string& endDate, const std::string& sort) {
     std::vector<NewsArticle> articles;
-
-    if (!db || !db->isConnected())
-        return articles;
-
-    try
-    {
-        auto conn = db->getConnection();
-
-        std::string query =
-            "SELECT id, title, description, url, source, published_at, likes, dislikes "
-            "FROM articles WHERE "
-            "(title LIKE ? OR description LIKE ? OR source LIKE ?)";
-
-        if (!startDate.empty())
-            query += " AND published_at >= ?";
-        if (!endDate.empty())
-            query += " AND published_at <= ?";
-
-        if (sortField == "likes")
-            query += " ORDER BY likes DESC";
-        else if (sortField == "dislikes")
-            query += " ORDER BY dislikes DESC";
-        else
-            query += " ORDER BY published_at DESC";
-
-        std::unique_ptr<sql::PreparedStatement> stmt(conn->prepareStatement(query));
-
-        std::string likeTerm = "%" + keyword + "%";
-        int i = 1;
-        stmt->setString(i++, likeTerm);
-        stmt->setString(i++, likeTerm);
-        stmt->setString(i++, likeTerm);
-
-        if (!startDate.empty())
-            stmt->setString(i++, startDate);
-        if (!endDate.empty())
-            stmt->setString(i++, endDate);
-
+    auto conn = db->getConnection();
+    std::string sql = "SELECT a.id, a.title, a.description, a.url, a.source, a.published_at, a.category_id, c.name as category_name, a.likes, a.dislikes FROM articles a LEFT JOIN categories c ON a.category_id = c.id WHERE 1=1";
+    if (!query.empty()) {
+        sql += " AND (a.title LIKE ? OR a.description LIKE ?)";
+    }
+    if (!startDate.empty()) {
+        sql += " AND a.published_at >= ?";
+    }
+    if (!endDate.empty()) {
+        sql += " AND a.published_at <= ?";
+    }
+    if (sort == "likes") {
+        sql += " ORDER BY a.likes DESC";
+    } else if (sort == "dislikes") {
+        sql += " ORDER BY a.dislikes DESC";
+    } else {
+        sql += " ORDER BY a.published_at DESC";
+    }
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(conn->prepareStatement(sql));
+        int idx = 1;
+        if (!query.empty()) {
+            std::string likeQuery = "%" + query + "%";
+            stmt->setString(idx++, likeQuery);
+            stmt->setString(idx++, likeQuery);
+        }
+        if (!startDate.empty()) {
+            stmt->setString(idx++, startDate);
+        }
+        if (!endDate.empty()) {
+            stmt->setString(idx++, endDate);
+        }
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        while (res->next())
-        {
+        while (res->next()) {
             NewsArticle article;
             article.id = res->getInt("id");
             article.title = res->getString("title");
@@ -264,16 +253,15 @@ std::vector<NewsArticle> NewsArticleRepository::searchArticles(const std::string
             article.url = res->getString("url");
             article.source = res->getString("source");
             article.publishedAt = res->getString("published_at");
+            article.categoryId = res->getInt("category_id");
+            article.categoryName = res->getString("category_name");
             article.likes = res->getInt("likes");
             article.dislikes = res->getInt("dislikes");
             articles.push_back(article);
         }
+    } catch (const sql::SQLException& e) {
+        std::cerr << "[NewsArticleRepository] searchArticles error: " << e.what() << std::endl;
     }
-    catch (const sql::SQLException &e)
-    {
-        std::cerr << "[NewsArticleRepository] Advanced search error: " << e.what() << "\n";
-    }
-
     return articles;
 }
 

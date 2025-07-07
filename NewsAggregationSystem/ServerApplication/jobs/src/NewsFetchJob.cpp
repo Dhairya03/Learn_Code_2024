@@ -1,5 +1,6 @@
 #include "jobs/inc/NewsFetchJob.h"
 #include "repositories/inc/NewsArticleRepository.h"
+#include "services/inc/NotificationService.h"
 #include "lib/httplib/httplib.h"
 #include "lib/json/json.hpp"
 #include <iostream>
@@ -9,7 +10,7 @@
 using json = nlohmann::json;
 
 NewsFetchJob::NewsFetchJob(std::shared_ptr<DBConnection> dbConn) 
-    : repository(dbConn), db(dbConn) {}
+    : repository(dbConn), db(dbConn), notificationService(std::make_unique<NotificationService>(dbConn)) {}
 
 std::string NewsFetchJob::safeGetString(const nlohmann::json& j, const std::string& key, const std::string& defaultValue) {
     try {
@@ -94,6 +95,9 @@ void NewsFetchJob::parseAndSaveArticles(const std::string& jsonResponse) {
                 if (repository.saveArticle(article)) {
                     successCount++;
                     std::cout << "[NewsFetchJob] ✓ Article " << (i + 1) << " saved successfully\n";
+                    
+                    // Process article for notifications
+                    processArticleForNotifications(article);
                 } else {
                     std::cout << "[NewsFetchJob] ✗ Failed to save article " << (i + 1) << "\n";
                 }
@@ -177,5 +181,14 @@ void NewsFetchJob::run() {
 
     } catch (const std::exception& e) {
         std::cerr << "[NewsFetchJob] Error in run(): " << e.what() << std::endl;
+    }
+}
+
+void NewsFetchJob::processArticleForNotifications(const NewsArticle& article) {
+    try {
+        std::cout << "[NewsFetchJob] Processing article for notifications: " << article.title << std::endl;
+        notificationService->processNewsArticleForNotifications(article);
+    } catch (const std::exception& e) {
+        std::cerr << "[NewsFetchJob] Error processing article for notifications: " << e.what() << std::endl;
     }
 }

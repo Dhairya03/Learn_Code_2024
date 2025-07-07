@@ -1,11 +1,12 @@
 #include "../inc/NotificationMenu.h"
 #include "../inc/ConfigureNotificationMenu.h"
+#include "../../Services/inc/NotificationService.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-NotificationMenu::NotificationMenu(Client& c, Session& s) : client(c), session(s) {}
+NotificationMenu::NotificationMenu(Client& c, Session& s) : client(c), session(s), notificationService(c) {}
 
 void NotificationMenu::display() {
     while (true) {
@@ -30,17 +31,21 @@ void NotificationMenu::display() {
 }
 
 void NotificationMenu::viewNotifications() {
-    std::string endpoint = "/notifications?user_id=" + std::to_string(session.getUserId());
-    std::string response = client.get(endpoint);
-
-    try {
-        auto notifications = json::parse(response);
-        std::cout << "\nYou have " << notifications.size() << " notifications:\n";
-        for (const auto& n : notifications) {
-            std::cout << "- " << n["message"] << " (" << n["timestamp"] << ")\n";
+    auto notifications = notificationService.getNotifications(session.getUserId());
+    
+    if (notifications.empty()) {
+        std::cout << "\nNo notifications found.\n";
+        return;
+    }
+    
+    std::cout << "\nYou have " << notifications.size() << " notifications:\n";
+    for (const auto& notification : notifications) {
+        std::cout << "- " << notification["message"] << " (" << notification["timestamp"] << ")\n";
+        std::cout << "  Type: " << notification["type"] << "\n";
+        if (notification.contains("category_name") && !notification["category_name"].is_null()) {
+            std::cout << "  Category: " << notification["category_name"] << "\n";
         }
-    } catch (...) {
-        std::cout << "Failed to parse notifications.\n";
+        std::cout << "\n";
     }
 }
 

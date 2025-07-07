@@ -4,6 +4,7 @@
 #include "controllers/inc/NewsController.h"
 #include "controllers/inc/SavedArticleController.h"
 #include "controllers/inc/AdminController.h"
+#include "controllers/inc/NotificationController.h"
 #include "database/inc/DBConnection.h"
 #include "jobs/inc/NewsFetchJob.h"
 #include <thread>
@@ -99,6 +100,42 @@ int main() {
     CROW_ROUTE(app, "/admin/categories/add").methods("POST"_method)
     ([dbConn](const crow::request& req){
         return AdminController::addCategory(req, dbConn);
+    });
+
+    // Notification routes
+    CROW_ROUTE(app, "/notifications").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return NotificationController::getNotifications(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/notifications/read").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return NotificationController::markNotificationAsRead(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/notifications/delete").methods("DELETE"_method)
+    ([dbConn](const crow::request& req) {
+        return NotificationController::deleteNotification(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/notifications/settings").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return NotificationController::getUserNotificationSettings(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/notifications/configure/category").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return NotificationController::updateCategorySettings(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/notifications/configure/keywords").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return NotificationController::updateKeywords(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/news/search").methods("GET"_method)
+    ([dbConn](const crow::request& req){
+        return NewsController::searchNews(req, dbConn);
     });
 
     startNewsFetcher(dbConn);

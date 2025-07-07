@@ -1,6 +1,8 @@
 #include "controllers/inc/NewsController.h"
 #include "services/inc/NewsService.h"
 #include "lib/json/json.hpp"
+#include <iostream>
+#include <string>
 
 using json = nlohmann::json;
 
@@ -136,4 +138,36 @@ crow::response NewsController::getNewsByDateAndCategory(const crow::request& req
         
     // }
     return crow::response(200, result.dump());
+}
+
+crow::response NewsController::searchNews(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    try {
+        std::string query = req.url_params.get("q") ? req.url_params.get("q") : "";
+        std::string startDate = req.url_params.get("start_date") ? req.url_params.get("start_date") : "";
+        std::string endDate = req.url_params.get("end_date") ? req.url_params.get("end_date") : "";
+        std::string sort = req.url_params.get("sort") ? req.url_params.get("sort") : "";
+
+        NewsService service(dbConn);
+        auto articles = service.searchArticles(query, startDate, endDate, sort);
+
+        json response = json::array();
+        for (const auto& article : articles) {
+            json articleJson;
+            articleJson["id"] = article.id;
+            articleJson["title"] = article.title;
+            articleJson["description"] = article.description;
+            articleJson["url"] = article.url;
+            articleJson["source"] = article.source;
+            articleJson["publishedAt"] = article.publishedAt;
+            articleJson["categoryId"] = article.categoryId;
+            articleJson["categoryName"] = article.categoryName;
+            articleJson["likes"] = article.likes;
+            articleJson["dislikes"] = article.dislikes;
+            response.push_back(articleJson);
+        }
+        return crow::response(200, response.dump());
+    } catch (const std::exception& e) {
+        std::cerr << "Error in searchNews: " << e.what() << std::endl;
+        return crow::response(500, "Internal server error");
+    }
 }

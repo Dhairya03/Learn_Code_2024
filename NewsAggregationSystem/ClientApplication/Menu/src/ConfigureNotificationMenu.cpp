@@ -1,19 +1,23 @@
 #include "../inc/ConfigureNotificationMenu.h"
+#include "../../Services/inc/NotificationService.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-ConfigureNotificationMenu::ConfigureNotificationMenu(Client& c, Session& s) : client(c), session(s) {}
+ConfigureNotificationMenu::ConfigureNotificationMenu(Client& c, Session& s) : client(c), session(s), notificationService(c) {}
 
 void ConfigureNotificationMenu::display() {
     while (true) {
+        // Get current settings
+        auto settings = notificationService.getUserNotificationSettings(session.getUserId());
+        
         std::cout << "\nC O N F I G U R E - N O T I F I C A T I O N S\n"
-                  << "1. Business - Enabled\n"
-                  << "2. Entertainment - Enabled\n"
-                  << "3. Sports - Disabled\n"
-                  << "4. Technology - Disabled\n"
-                  << "5. Keywords - Enabled\n"
+                  << "1. Business - " << (settings.value("business_enabled", false) ? "Enabled" : "Disabled") << "\n"
+                  << "2. Entertainment - " << (settings.value("entertainment_enabled", false) ? "Enabled" : "Disabled") << "\n"
+                  << "3. Sports - " << (settings.value("sports_enabled", false) ? "Enabled" : "Disabled") << "\n"
+                  << "4. Technology - " << (settings.value("technology_enabled", false) ? "Enabled" : "Disabled") << "\n"
+                  << "5. Keywords - " << (settings.value("keywords_enabled", false) ? "Enabled" : "Disabled") << "\n"
                   << "6. Back\n"
                   << "7. Logout\n"
                   << "Enter your option: ";
@@ -41,14 +45,14 @@ void ConfigureNotificationMenu::toggleCategory(int categoryId) {
     std::cout << "Enable or Disable this category? (enable/disable): ";
     std::getline(std::cin, status);
 
-    json body = {
-        {"user_id", session.getUserId()},
-        {"category_id", categoryId},
-        {"enabled", status == "enable"}
-    };
-
-    std::string res = client.post("/notifications/configure/category", body.dump());
-    std::cout << "Server: " << res << "\n";
+    bool enabled = (status == "enable");
+    bool success = notificationService.updateCategorySettings(session.getUserId(), categoryId, enabled);
+    
+    if (success) {
+        std::cout << "Category settings updated successfully.\n";
+    } else {
+        std::cout << "Failed to update category settings.\n";
+    }
 }
 
 void ConfigureNotificationMenu::configureKeywords() {
@@ -56,11 +60,11 @@ void ConfigureNotificationMenu::configureKeywords() {
     std::cout << "Enter keywords separated by commas (e.g., Tesla, Election, Crypto): ";
     std::getline(std::cin, keywords);
 
-    json body = {
-        {"user_id", session.getUserId()},
-        {"keywords", keywords}
-    };
-
-    std::string res = client.post("/notifications/configure/keywords", body.dump());
-    std::cout << "Server: " << res << "\n";
+    bool success = notificationService.updateKeywords(session.getUserId(), keywords);
+    
+    if (success) {
+        std::cout << "Keywords updated successfully.\n";
+    } else {
+        std::cout << "Failed to update keywords.\n";
+    }
 }

@@ -1,61 +1,45 @@
 #include "../inc/SearchMenu.h"
-#include "../../Services/inc/SavedArticleService.h"
+#include "../../Services/inc/ArticleService.h"
 #include <iostream>
+#include <limits>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-SearchMenu::SearchMenu(Client& c, Session& s) : client(c), session(s) {}
+SearchMenu::SearchMenu(Client& c, Session& s) : client(c), session(s), articleService(c) {}
 
 void SearchMenu::display() {
+    std::string query, startDate, endDate, sort;
     std::cout << "\nS E A R C H\n";
-    performSearch();
-}
-
-void SearchMenu::performSearch() {
-    std::string query, start, end;
-    std::cout << "Enter search keyword: ";
+    std::cout << "Enter search query: ";
     std::getline(std::cin, query);
+    std::cout << "Enter start date (YYYY-MM-DD, optional): ";
+    std::getline(std::cin, startDate);
+    std::cout << "Enter end date (YYYY-MM-DD, optional): ";
+    std::getline(std::cin, endDate);
+    std::cout << "Sort by (likes/dislikes/newest): ";
+    std::getline(std::cin, sort);
+    if (sort != "likes" && sort != "dislikes") sort = "";
 
-    std::cout << "Enter start date (YYYY-MM-DD): ";
-    std::getline(std::cin, start);
-    std::cout << "Enter end date (YYYY-MM-DD): ";
-    std::getline(std::cin, end);
-
-    std::string endpoint = "/news/search?query=" + query +
-                           "&start=" + start + "&end=" + end + "&sort=likes";
-
-    std::string response = client.get(endpoint);
-
-    try {
-        auto articles = json::parse(response);
-        std::cout << "Results for \"" << query << "\":\n";
-
-        for (const auto& a : articles) {
-            std::cout << "Article ID: " << a["id"]
-                      << "\nTitle: " << a["title"]
-                      << "\nSource: " << a["source"]
-                      << "\nURL: " << a["url"]
-                      << "\nCategory: " << a["category"]
-                      << "\n\n";
-        }
-
-        std::cout << "1. Back\n2. Logout\n3. Save Article\n>> ";
-        int action;
-        std::cin >> action;
-        std::cin.ignore();
-
-        if (action == 3) {
-            int id;
-            std::cout << "Enter Article ID to save: ";
-            std::cin >> id;
-            std::cin.ignore();
-            SavedArticleService(client, session).saveArticle(id);
-        } else if (action == 2) {
-            exit(0);
-        }
-
-    } catch (...) {
-        std::cout << "Invalid search response.\n";
+    auto results = articleService.searchArticles(query, startDate, endDate, sort);
+    if (results.empty()) {
+        std::cout << "No articles found.\n";
+        return;
+    }
+    std::cout << "\nResults for '" << query << "':\n";
+    int idx = 1;
+    for (const auto& article : results) {
+        std::cout << idx << ". " << article["title"] << "\n   Source: " << article["source"] << " | Likes: " << article["likes"] << " | Dislikes: " << article["dislikes"] << "\n";
+        ++idx;
+    }
+    std::cout << "\nEnter article number to save, or 0 to go back: ";
+    int choice = 0;
+    std::cin >> choice;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    if (choice > 0 && choice <= (int)results.size()) {
+        int articleId = results[choice-1]["id"];
+        json body = { {"user_id", session.getUserId()}, {"article_id", articleId} };
+        std::string res = client.post("/user/articles/save", body.dump());
+        std::cout << "Server: " << res << "\n";
     }
 }

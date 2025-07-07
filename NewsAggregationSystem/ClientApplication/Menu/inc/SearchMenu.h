@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Core/inc/Client.h"
 #include "../../Core/inc/Session.h"
+#include "../../Services/inc/ArticleService.h"
 
 class SearchMenu {
 public:
@@ -10,6 +11,5 @@ public:
 private:
     Client& client;
     Session& session;
-
-    void performSearch();
+    ArticleService articleService;
 };

@@ -15,13 +15,9 @@ std::vector<NewsArticle> NewsService::getArticlesByCategory(const std::string &c
     return repo.getArticlesByCategory(category);
 }
 
-std::vector<NewsArticle> NewsService::searchArticles(const std::string &keyword,
-                                                     const std::string &start,
-                                                     const std::string &end,
-                                                     const std::string &sort)
-{
+std::vector<NewsArticle> NewsService::searchArticles(const std::string& query, const std::string& startDate, const std::string& endDate, const std::string& sort) {
     NewsArticleRepository repo(db);
-    return repo.searchArticles(keyword, start, end, sort);
+    return repo.searchArticles(query, startDate, endDate, sort);
 }
 
 std::vector<NewsArticle> NewsService::getNewsByDateAndCategory(const std::string &startDate, const std::string &endDate, const std::string &category)

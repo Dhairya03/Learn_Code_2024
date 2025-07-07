@@ -53,3 +53,30 @@ std::optional<User> UserRepository::findByEmailAndPassword(const std::string& em
 
     return std::nullopt;
 }
+
+User UserRepository::getUserById(int userId) {
+    User user;
+    user.id = userId;
+    
+    if (!db || !db->isConnected()) return user;
+
+    try {
+        auto conn = db->getConnection();
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn->prepareStatement("SELECT id, username, email, role FROM users WHERE id = ?"));
+        stmt->setInt(1, userId);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next()) {
+            user.id = res->getInt("id");
+            user.username = res->getString("username");
+            user.email = res->getString("email");
+            user.role = User::parseRole(res->getString("role"));
+        }
+
+    } catch (const sql::SQLException& e) {
+        std::cerr << "[UserRepository] Error getting user by ID: " << e.what() << "\n";
+    }
+
+    return user;
+}

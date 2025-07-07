@@ -11,10 +11,7 @@ public:
     explicit NewsService(std::shared_ptr<DBConnection> dbConn);
     std::vector<NewsArticle> getAllArticles();
     std::vector<NewsArticle> getArticlesByCategory(const std::string& category);
-    std::vector<NewsArticle> searchArticles(const std::string& keyword,
-                                                     const std::string& start,
-                                                     const std::string& end,
-                                                     const std::string& sort);
+    std::vector<NewsArticle> searchArticles(const std::string& query, const std::string& startDate, const std::string& endDate, const std::string& sort);
     std::vector<NewsArticle> getNewsByDateAndCategory(const std::string& startDate, const std::string& endDate, const std::string& category);
     std::vector<NewsArticle> getArticlesToday();
 
