@@ -69,7 +69,7 @@ void HeadlinesMenu::fetchAndDisplayArticles(const std::string& start, const std:
                   << "\nCategory: " << a["category"] << "\n\n";
     }
 
-    std::cout << "1. Back\n2. Logout\n3. Save Article\n>> ";
+    std::cout << "1. Back\n2. Logout\n3. Save Article\n4. Like Article\n5. Dislike Article\n6. Report Article\n>> ";
     int action;
     std::cin >> action;
     std::cin.ignore();
@@ -80,6 +80,26 @@ void HeadlinesMenu::fetchAndDisplayArticles(const std::string& start, const std:
         std::cin >> id;
         std::cin.ignore();
         SavedArticleService(client, session).saveArticle(id);
+    } else if (action == 4) {
+        int id;
+        std::cout << "Enter Article ID to like: ";
+        std::cin >> id;
+        std::cin.ignore();
+        std::cout << "Liked Article ID: " << id << " (stub, backend not implemented yet)\n";
+    } else if (action == 5) {
+        int id;
+        std::cout << "Enter Article ID to dislike: ";
+        std::cin >> id;
+        std::cin.ignore();
+        std::cout << "Disliked Article ID: " << id << " (stub, backend not implemented yet)\n";
+    } else if (action == 6) {
+        int id;
+        std::cout << "Enter Article ID to report: ";
+        std::cin >> id;
+        std::cin.ignore();
+        nlohmann::json body = { {"user_id", session.getUserId()}, {"article_id", id} };
+        std::string res = client.post("/articles/report", body.dump());
+        std::cout << "Server: " << res << "\n";
     } else if (action == 2) {
         exit(0);
     }
