@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 
 NotificationRepository::NotificationRepository(std::shared_ptr<DBConnection> dbConn) 
     : dbConn(std::move(dbConn)) {
@@ -13,7 +14,6 @@ NotificationRepository::NotificationRepository(std::shared_ptr<DBConnection> dbC
 void NotificationRepository::createTablesIfNotExist() {
     auto conn = dbConn->getConnection();
     
-    // Create notifications table
     std::string createNotificationsTable = R"(
         CREATE TABLE IF NOT EXISTS notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,7 +29,6 @@ void NotificationRepository::createTablesIfNotExist() {
         )
     )";
     
-    // Create user_notification_settings table
     std::string createSettingsTable = R"(
         CREATE TABLE IF NOT EXISTS user_notification_settings (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,13 +56,12 @@ void NotificationRepository::createTablesIfNotExist() {
 }
 
 bool NotificationRepository::createNotification(const Notification& notification) {
+    std::cout << "[NotificationRepository] createNotification called" << std::endl;
     auto conn = dbConn->getConnection();
-    
     std::string query = R"(
         INSERT INTO notifications (user_id, message, type, article_id, category_name, keywords)
         VALUES (?, ?, ?, ?, ?, ?)
     )";
-    
     try {
         auto stmt = conn->prepareStatement(query);
         stmt->setInt(1, notification.userId);
@@ -72,29 +70,28 @@ bool NotificationRepository::createNotification(const Notification& notification
         stmt->setInt(4, notification.articleId);
         stmt->setString(5, notification.categoryName);
         stmt->setString(6, notification.keywords);
-        
-        return stmt->executeUpdate() > 0;
-    } catch (const sql::SQLException& e) {
-        std::cerr << "Error creating notification: " << e.what() << std::endl;
+        bool result = stmt->executeUpdate() > 0;
+        std::cout << "[NotificationRepository] createNotification success" << std::endl;
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "[NotificationRepository] createNotification error: " << e.what() << std::endl;
         return false;
     }
 }
 
 std::vector<Notification> NotificationRepository::getNotificationsByUserId(int userId) {
+    std::cout << "[NotificationRepository] getNotificationsByUserId called" << std::endl;
     auto conn = dbConn->getConnection();
     std::vector<Notification> notifications;
-    
     std::string query = R"(
         SELECT id, user_id, message, type, timestamp, is_read, article_id, category_name, keywords
         FROM notifications 
         WHERE user_id = ? 
         ORDER BY timestamp DESC
     )";
-    
     try {
         auto stmt = conn->prepareStatement(query);
         stmt->setInt(1, userId);
-        
         auto rs = stmt->executeQuery();
         while (rs->next()) {
             Notification notification;
@@ -107,44 +104,43 @@ std::vector<Notification> NotificationRepository::getNotificationsByUserId(int u
             notification.articleId = rs->getInt("article_id");
             notification.categoryName = rs->getString("category_name");
             notification.keywords = rs->getString("keywords");
-            
             notifications.push_back(notification);
         }
-    } catch (const sql::SQLException& e) {
-        std::cerr << "Error getting notifications: " << e.what() << std::endl;
+        std::cout << "[NotificationRepository] getNotificationsByUserId success" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[NotificationRepository] getNotificationsByUserId error: " << e.what() << std::endl;
     }
-    
     return notifications;
 }
 
 bool NotificationRepository::markNotificationAsRead(int notificationId) {
+    std::cout << "[NotificationRepository] markNotificationAsRead called" << std::endl;
     auto conn = dbConn->getConnection();
-    
     std::string query = "UPDATE notifications SET is_read = TRUE WHERE id = ?";
-    
     try {
         auto stmt = conn->prepareStatement(query);
         stmt->setInt(1, notificationId);
-        
-        return stmt->executeUpdate() > 0;
-    } catch (const sql::SQLException& e) {
-        std::cerr << "Error marking notification as read: " << e.what() << std::endl;
+        bool result = stmt->executeUpdate() > 0;
+        std::cout << "[NotificationRepository] markNotificationAsRead success" << std::endl;
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "[NotificationRepository] markNotificationAsRead error: " << e.what() << std::endl;
         return false;
     }
 }
 
 bool NotificationRepository::deleteNotification(int notificationId) {
+    std::cout << "[NotificationRepository] deleteNotification called" << std::endl;
     auto conn = dbConn->getConnection();
-    
     std::string query = "DELETE FROM notifications WHERE id = ?";
-    
     try {
         auto stmt = conn->prepareStatement(query);
         stmt->setInt(1, notificationId);
-        
-        return stmt->executeUpdate() > 0;
-    } catch (const sql::SQLException& e) {
-        std::cerr << "Error deleting notification: " << e.what() << std::endl;
+        bool result = stmt->executeUpdate() > 0;
+        std::cout << "[NotificationRepository] deleteNotification success" << std::endl;
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "[NotificationRepository] deleteNotification error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -320,18 +316,16 @@ std::vector<int> NotificationRepository::getUsersToNotifyForKeywords(const std::
             int userId = rs->getInt("user_id");
             std::string keywords = rs->getString("keywords");
             
-            // Check if any keyword matches
             std::istringstream keywordStream(keywords);
             std::string keyword;
             while (std::getline(keywordStream, keyword, ',')) {
-                // Trim whitespace
                 keyword.erase(0, keyword.find_first_not_of(" \t"));
                 keyword.erase(keyword.find_last_not_of(" \t") + 1);
                 std::transform(keyword.begin(), keyword.end(), keyword.begin(), ::tolower);
                 
                 if (!keyword.empty() && combinedText.find(keyword) != std::string::npos) {
                     userIds.push_back(userId);
-                    break; // Found a match for this user, move to next user
+                    break; 
                 }
             }
         }

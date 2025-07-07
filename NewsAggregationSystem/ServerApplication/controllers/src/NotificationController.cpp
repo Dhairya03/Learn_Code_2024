@@ -6,16 +6,16 @@
 using json = nlohmann::json;
 
 crow::response NotificationController::getNotifications(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NotificationController] getNotifications called" << std::endl;
     try {
         auto userId = req.url_params.get("user_id");
         if (!userId) {
-            return crow::response(400, "Missing user_id parameter");
+            json response = {{"success", false}, {"message", "Missing user_id parameter"}};
+            return crow::response(400, response.dump());
         }
-        
         NotificationService service(dbConn);
         auto notifications = service.getUserNotifications(std::stoi(userId));
-        
-        json response;
+        json result = json::array();
         for (const auto& notification : notifications) {
             json notificationJson;
             notificationJson["id"] = notification.id;
@@ -27,134 +27,154 @@ crow::response NotificationController::getNotifications(const crow::request& req
             notificationJson["article_id"] = notification.articleId;
             notificationJson["category_name"] = notification.categoryName;
             notificationJson["keywords"] = notification.keywords;
-            
-            response.push_back(notificationJson);
+            result.push_back(notificationJson);
         }
-        
+        json response = {{"success", true}, {"data", result}};
+        std::cout << "[NotificationController] getNotifications success" << std::endl;
         return crow::response(200, response.dump());
     } catch (const std::exception& e) {
-        std::cerr << "Error getting notifications: " << e.what() << std::endl;
-        return crow::response(500, "Internal server error");
+        std::cerr << "[NotificationController] getNotifications error: " << e.what() << std::endl;
+        json response = {{"success", false}, {"message", e.what()}};
+        return crow::response(500, response.dump());
     }
 }
 
 crow::response NotificationController::markNotificationAsRead(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NotificationController] markNotificationAsRead called" << std::endl;
     try {
         auto notificationId = req.url_params.get("notification_id");
         if (!notificationId) {
-            return crow::response(400, "Missing notification_id parameter");
+            json response = {{"success", false}, {"message", "Missing notification_id parameter"}};
+            return crow::response(400, response.dump());
         }
-        
         NotificationService service(dbConn);
         bool success = service.markNotificationAsRead(std::stoi(notificationId));
-        
         if (success) {
-            return crow::response(200, "{\"message\": \"Notification marked as read\"}");
+            json response = {{"success", true}, {"message", "Notification marked as read"}};
+            std::cout << "[NotificationController] markNotificationAsRead success" << std::endl;
+            return crow::response(200, response.dump());
         } else {
-            return crow::response(404, "{\"error\": \"Notification not found\"}");
+            json response = {{"success", false}, {"message", "Notification not found"}};
+            std::cerr << "[NotificationController] markNotificationAsRead not found" << std::endl;
+            return crow::response(404, response.dump());
         }
     } catch (const std::exception& e) {
-        std::cerr << "Error marking notification as read: " << e.what() << std::endl;
-        return crow::response(500, "Internal server error");
+        std::cerr << "[NotificationController] markNotificationAsRead error: " << e.what() << std::endl;
+        json response = {{"success", false}, {"message", e.what()}};
+        return crow::response(500, response.dump());
     }
 }
 
 crow::response NotificationController::deleteNotification(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NotificationController] deleteNotification called" << std::endl;
     try {
         auto notificationId = req.url_params.get("notification_id");
         if (!notificationId) {
-            return crow::response(400, "Missing notification_id parameter");
+            json response = {{"success", false}, {"message", "Missing notification_id parameter"}};
+            return crow::response(400, response.dump());
         }
-        
         NotificationService service(dbConn);
         bool success = service.deleteNotification(std::stoi(notificationId));
-        
         if (success) {
-            return crow::response(200, "{\"message\": \"Notification deleted\"}");
+            json response = {{"success", true}, {"message", "Notification deleted"}};
+            std::cout << "[NotificationController] deleteNotification success" << std::endl;
+            return crow::response(200, response.dump());
         } else {
-            return crow::response(404, "{\"error\": \"Notification not found\"}");
+            json response = {{"success", false}, {"message", "Notification not found"}};
+            std::cerr << "[NotificationController] deleteNotification not found" << std::endl;
+            return crow::response(404, response.dump());
         }
     } catch (const std::exception& e) {
-        std::cerr << "Error deleting notification: " << e.what() << std::endl;
-        return crow::response(500, "Internal server error");
+        std::cerr << "[NotificationController] deleteNotification error: " << e.what() << std::endl;
+        json response = {{"success", false}, {"message", e.what()}};
+        return crow::response(500, response.dump());
     }
 }
 
 crow::response NotificationController::getUserNotificationSettings(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NotificationController] getUserNotificationSettings called" << std::endl;
     try {
         auto userId = req.url_params.get("user_id");
         if (!userId) {
-            return crow::response(400, "Missing user_id parameter");
+            json response = {{"success", false}, {"message", "Missing user_id parameter"}};
+            return crow::response(400, response.dump());
         }
-        
         NotificationService service(dbConn);
         auto settings = service.getUserNotificationSettings(std::stoi(userId));
-        
-        json response;
-        response["id"] = settings.id;
-        response["user_id"] = settings.userId;
-        response["business_enabled"] = settings.businessEnabled;
-        response["entertainment_enabled"] = settings.entertainmentEnabled;
-        response["sports_enabled"] = settings.sportsEnabled;
-        response["technology_enabled"] = settings.technologyEnabled;
-        response["keywords_enabled"] = settings.keywordsEnabled;
-        response["keywords"] = settings.keywords;
-        response["email"] = settings.email;
-        
+        json result = {
+            {"id", settings.id},
+            {"user_id", settings.userId},
+            {"business_enabled", settings.businessEnabled},
+            {"entertainment_enabled", settings.entertainmentEnabled},
+            {"sports_enabled", settings.sportsEnabled},
+            {"technology_enabled", settings.technologyEnabled},
+            {"keywords_enabled", settings.keywordsEnabled},
+            {"keywords", settings.keywords},
+            {"email", settings.email}
+        };
+        json response = {{"success", true}, {"data", result}};
+        std::cout << "[NotificationController] getUserNotificationSettings success" << std::endl;
         return crow::response(200, response.dump());
     } catch (const std::exception& e) {
-        std::cerr << "Error getting user notification settings: " << e.what() << std::endl;
-        return crow::response(500, "Internal server error");
+        std::cerr << "[NotificationController] getUserNotificationSettings error: " << e.what() << std::endl;
+        json response = {{"success", false}, {"message", e.what()}};
+        return crow::response(500, response.dump());
     }
 }
 
 crow::response NotificationController::updateCategorySettings(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NotificationController] updateCategorySettings called" << std::endl;
     try {
         auto body = json::parse(req.body);
-        
         if (!body.contains("user_id") || !body.contains("category_id") || !body.contains("enabled")) {
-            return crow::response(400, "Missing required fields: user_id, category_id, enabled");
+            json response = {{"success", false}, {"message", "Missing required fields: user_id, category_id, enabled"}};
+            return crow::response(400, response.dump());
         }
-        
         int userId = body["user_id"];
         int categoryId = body["category_id"];
         bool enabled = body["enabled"];
-        
         NotificationService service(dbConn);
         bool success = service.updateCategorySettings(userId, categoryId, enabled);
-        
         if (success) {
-            return crow::response(200, "{\"message\": \"Category settings updated\"}");
+            json response = {{"success", true}, {"message", "Category settings updated"}};
+            std::cout << "[NotificationController] updateCategorySettings success" << std::endl;
+            return crow::response(200, response.dump());
         } else {
-            return crow::response(400, "{\"error\": \"Failed to update category settings\"}");
+            json response = {{"success", false}, {"message", "Failed to update category settings"}};
+            std::cerr << "[NotificationController] updateCategorySettings failed" << std::endl;
+            return crow::response(400, response.dump());
         }
     } catch (const std::exception& e) {
-        std::cerr << "Error updating category settings: " << e.what() << std::endl;
-        return crow::response(500, "Internal server error");
+        std::cerr << "[NotificationController] updateCategorySettings error: " << e.what() << std::endl;
+        json response = {{"success", false}, {"message", e.what()}};
+        return crow::response(500, response.dump());
     }
 }
 
 crow::response NotificationController::updateKeywords(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NotificationController] updateKeywords called" << std::endl;
     try {
         auto body = json::parse(req.body);
-        
         if (!body.contains("user_id") || !body.contains("keywords")) {
-            return crow::response(400, "Missing required fields: user_id, keywords");
+            json response = {{"success", false}, {"message", "Missing required fields: user_id, keywords"}};
+            return crow::response(400, response.dump());
         }
-        
         int userId = body["user_id"];
         std::string keywords = body["keywords"];
-        
         NotificationService service(dbConn);
         bool success = service.updateKeywords(userId, keywords);
-        
         if (success) {
-            return crow::response(200, "{\"message\": \"Keywords updated\"}");
+            json response = {{"success", true}, {"message", "Keywords updated"}};
+            std::cout << "[NotificationController] updateKeywords success" << std::endl;
+            return crow::response(200, response.dump());
         } else {
-            return crow::response(400, "{\"error\": \"Failed to update keywords\"}");
+            json response = {{"success", false}, {"message", "Failed to update keywords"}};
+            std::cerr << "[NotificationController] updateKeywords failed" << std::endl;
+            return crow::response(400, response.dump());
         }
     } catch (const std::exception& e) {
-        std::cerr << "Error updating keywords: " << e.what() << std::endl;
-        return crow::response(500, "Internal server error");
+        std::cerr << "[NotificationController] updateKeywords error: " << e.what() << std::endl;
+        json response = {{"success", false}, {"message", e.what()}};
+        return crow::response(500, response.dump());
     }
 } 

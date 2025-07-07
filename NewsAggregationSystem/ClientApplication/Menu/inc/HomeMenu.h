@@ -4,14 +4,14 @@
 
 class HomeMenu {
 public:
-    HomeMenu(Client& client, Session& session);
+    HomeMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
 
-    void login();
-    void signup();
-    void exitApp();
+    void displayLogin();
+    void displaySignup();
+    void exitApplication();
 };

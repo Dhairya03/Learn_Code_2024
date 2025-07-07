@@ -5,210 +5,200 @@
 #include <string>
 #include <cppconn/prepared_statement.h>
 #include <cppconn/resultset.h>
+#include "repositories/inc/NotificationRepository.h"
+#include "repositories/inc/UserRepository.h"
+#include "models/inc/Notification.h"
 
 using json = nlohmann::json;
 
+// Helper function for serializing a NewsArticle to JSON
+static nlohmann::json serializeArticle(const NewsArticle& article) {
+    nlohmann::json articleJson = {
+        {"id", article.id},
+        {"title", article.title},
+        {"description", article.description},
+        {"url", article.url},
+        {"source", article.source},
+        {"published_at", article.publishedAt},
+        {"category", article.categoryName},
+        {"categoryId", article.categoryId},
+        {"likes", article.likes},
+        {"dislikes", article.dislikes}
+    };
+    return articleJson;
+}
+
 crow::response NewsController::getAll(const crow::request&, std::shared_ptr<DBConnection> dbConn) {
-    NewsService service(dbConn);
-    auto articles = service.getAllArticles();
-
-    json result = json::array();
-    for (const auto& a : articles) {
-        result.push_back({
-            {"id", a.id},
-            {"title", a.title},
-            {"description", a.description},
-            {"url", a.url},
-            {"source", a.source},
-            {"published_at", a.publishedAt}
-        });
+    std::cout << "[NewsController] getAll called" << std::endl;
+    NewsService newsService(dbConn);
+    auto articles = newsService.getAllArticles();
+    nlohmann::json result = nlohmann::json::array();
+    for (const auto& article : articles) {
+        result.push_back(serializeArticle(article));
     }
-
+    std::cout << "[NewsController] getAll returning " << result.size() << " articles" << std::endl;
     return crow::response(200, result.dump());
 }
 
 crow::response NewsController::getByCategory(const crow::request&, std::shared_ptr<DBConnection> dbConn, const std::string& categoryName) {
-    NewsService service(dbConn);
-    auto articles = service.getArticlesByCategory(categoryName);
-
+    std::cout << "[NewsController] getByCategory called for category: " << categoryName << std::endl;
+    NewsService newsService(dbConn);
+    auto articles = newsService.getArticlesByCategory(categoryName);
     if (articles.empty()) {
+        std::cout << "[NewsController] No articles found in category: " << categoryName << std::endl;
         return crow::response(404, "No articles found in this category");
     }
-
     nlohmann::json result = nlohmann::json::array();
-    for (const auto& a : articles) {
-        result.push_back({
-            {"id", a.id},
-            {"title", a.title},
-            {"description", a.description},
-            {"url", a.url},
-            {"source", a.source},
-            {"published_at", a.publishedAt}
-        });
+    for (const auto& article : articles) {
+        result.push_back(serializeArticle(article));
     }
-
+    std::cout << "[NewsController] getByCategory returning " << result.size() << " articles" << std::endl;
     return crow::response(200, result.dump());
 }
 
 crow::response NewsController::search(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NewsController] search called" << std::endl;
     auto params = crow::query_string(req.url_params);
-
-    const char* q     = params.get("q");
-    const char* start = params.get("start");
-    const char* end   = params.get("end");
-    const char* sort  = params.get("sort");
-
-    if (!q) return crow::response(400, "Missing search query");
-
-    NewsService service(dbConn);
-    auto articles = service.searchArticles(
-        std::string(q),
-        start ? std::string(start) : "",
-        end ? std::string(end) : "",
+    const char* query = params.get("q");
+    const char* startDate = params.get("start");
+    const char* endDate = params.get("end");
+    const char* sort = params.get("sort");
+    if (!query) {
+        std::cout << "[NewsController] search missing query param" << std::endl;
+        return crow::response(400, "Missing search query");
+    }
+    NewsService newsService(dbConn);
+    auto articles = newsService.searchArticles(
+        std::string(query),
+        startDate ? std::string(startDate) : "",
+        endDate ? std::string(endDate) : "",
         sort ? std::string(sort) : ""
     );
-
     nlohmann::json result = nlohmann::json::array();
-    for (const auto& a : articles) {
-        result.push_back({
-            {"id", a.id},
-            {"title", a.title},
-            {"description", a.description},
-            {"url", a.url},
-            {"source", a.source},
-            {"published_at", a.publishedAt},
-            {"likes", a.likes},
-            {"dislikes", a.dislikes}
-        });
+    for (const auto& article : articles) {
+        result.push_back(serializeArticle(article));
     }
-
+    std::cout << "[NewsController] search returning " << result.size() << " articles" << std::endl;
     return crow::response(200, result.dump());
 }
 
 crow::response NewsController::getTodayNews(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NewsController] getTodayNews called" << std::endl;
     NewsService newsService(dbConn);
     auto articles = newsService.getArticlesToday();
-
-    json result = json::array();
-    for (const auto& a : articles) {
-        result.push_back({
-            {"id", a.id},
-            {"title", a.title},
-            {"description", a.description},
-            {"url", a.url},
-            {"source", a.source},
-            {"published_at", a.publishedAt},
-            {"category", a.categoryName}
-        });
+    nlohmann::json result = nlohmann::json::array();
+    for (const auto& article : articles) {
+        result.push_back(serializeArticle(article));
     }
-
+    std::cout << "[NewsController] getTodayNews returning " << result.size() << " articles" << std::endl;
     return crow::response(200, result.dump());
 }
 
 crow::response NewsController::getNewsByDateAndCategory(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
-    auto queryParams = crow::query_string(req.url_params);
-    std::string start = req.url_params.get("start") ? req.url_params.get("start") : "";
-    std::string end = req.url_params.get("end") ? req.url_params.get("end") : "";
+    std::cout << "[NewsController] getNewsByDateAndCategory called" << std::endl;
+    std::string startDate = req.url_params.get("start") ? req.url_params.get("start") : "";
+    std::string endDate = req.url_params.get("end") ? req.url_params.get("end") : "";
     std::string category = req.url_params.get("category") ? req.url_params.get("category") : "";
-
-    if (start.empty() || end.empty()) {
+    if (startDate.empty() || endDate.empty()) {
+        std::cout << "[NewsController] getNewsByDateAndCategory missing start or end date" << std::endl;
         return crow::response(400, "Missing start or end date");
     }
-
     NewsService newsService(dbConn);
-    auto articles = newsService.getNewsByDateAndCategory(start, end, category);
-
-    json result = json::array();
-    for (const auto& a : articles) {
-        result.push_back({
-            {"id", a.id},
-            {"title", a.title},
-            {"description", a.description},
-            {"url", a.url},
-            {"source", a.source},
-            {"published_at", a.publishedAt},
-            {"category", a.categoryId},
-            {"likes", a.likes},
-            {"dislikes", a.dislikes}
-        });
+    auto articles = newsService.getNewsByDateAndCategory(startDate, endDate, category);
+    nlohmann::json result = nlohmann::json::array();
+    for (const auto& article : articles) {
+        result.push_back(serializeArticle(article));
     }
-    // if (result.empty()) {
-    //     return crow::response(404, "No articles found for the given date range and category");
-    // }
-    // else{
-    //     std::cout << "Articles found: " << result.size() << std::endl;
-        
-    // }
+    std::cout << "[NewsController] getNewsByDateAndCategory returning " << result.size() << " articles" << std::endl;
     return crow::response(200, result.dump());
 }
 
 crow::response NewsController::searchNews(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NewsController] searchNews called" << std::endl;
     try {
         std::string query = req.url_params.get("q") ? req.url_params.get("q") : "";
         std::string startDate = req.url_params.get("start_date") ? req.url_params.get("start_date") : "";
         std::string endDate = req.url_params.get("end_date") ? req.url_params.get("end_date") : "";
         std::string sort = req.url_params.get("sort") ? req.url_params.get("sort") : "";
-
-        NewsService service(dbConn);
-        auto articles = service.searchArticles(query, startDate, endDate, sort);
-
-        json response = json::array();
+        NewsService newsService(dbConn);
+        auto articles = newsService.searchArticles(query, startDate, endDate, sort);
+        nlohmann::json result = nlohmann::json::array();
         for (const auto& article : articles) {
-            json articleJson;
-            articleJson["id"] = article.id;
-            articleJson["title"] = article.title;
-            articleJson["description"] = article.description;
-            articleJson["url"] = article.url;
-            articleJson["source"] = article.source;
-            articleJson["publishedAt"] = article.publishedAt;
-            articleJson["categoryId"] = article.categoryId;
-            articleJson["categoryName"] = article.categoryName;
-            articleJson["likes"] = article.likes;
-            articleJson["dislikes"] = article.dislikes;
-            response.push_back(articleJson);
+            result.push_back(serializeArticle(article));
         }
-        return crow::response(200, response.dump());
+        std::cout << "[NewsController] searchNews returning " << result.size() << " articles" << std::endl;
+        return crow::response(200, result.dump());
     } catch (const std::exception& e) {
-        std::cerr << "Error in searchNews: " << e.what() << std::endl;
+        std::cerr << "[NewsController] Error in searchNews: " << e.what() << std::endl;
         return crow::response(500, "Internal server error");
     }
 }
 
 crow::response NewsController::reportArticle(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    std::cout << "[NewsController] reportArticle called" << std::endl;
     try {
-        auto body = nlohmann::json::parse(req.body);
-        if (!body.contains("user_id") || !body.contains("article_id")) {
+        auto requestBody = nlohmann::json::parse(req.body);
+        if (!requestBody.contains("user_id") || !requestBody.contains("article_id")) {
+            std::cout << "[NewsController] reportArticle missing user_id or article_id" << std::endl;
             return crow::response(400, "Missing user_id or article_id");
         }
-        int userId = body["user_id"];
-        int articleId = body["article_id"];
-        int reportThreshold = 3; // You can adjust this threshold
-        auto conn = dbConn->getConnection();
-        // Insert report
-        std::unique_ptr<sql::PreparedStatement> insertStmt(
-            conn->prepareStatement("INSERT INTO reports (article_id, user_id) VALUES (?, ?)")
+        int userId = requestBody["user_id"];
+        int articleId = requestBody["article_id"];
+        int reportThreshold = 3;
+        auto dbConnection = dbConn->getConnection();
+        std::unique_ptr<sql::PreparedStatement> insertReportStmt(
+            dbConnection->prepareStatement("INSERT INTO reports (article_id, user_id) VALUES (?, ?)")
         );
-        insertStmt->setInt(1, articleId);
-        insertStmt->setInt(2, userId);
-        insertStmt->execute();
-        // Count reports for this article
-        std::unique_ptr<sql::PreparedStatement> countStmt(
-            conn->prepareStatement("SELECT COUNT(*) as count FROM reports WHERE article_id = ?")
+        insertReportStmt->setInt(1, articleId);
+        insertReportStmt->setInt(2, userId);
+        insertReportStmt->execute();
+        std::cout << "[NewsController] Report inserted for article_id=" << articleId << ", user_id=" << userId << std::endl;
+        std::unique_ptr<sql::PreparedStatement> countReportsStmt(
+            dbConnection->prepareStatement("SELECT COUNT(*) as count FROM reports WHERE article_id = ?")
         );
-        countStmt->setInt(1, articleId);
-        std::unique_ptr<sql::ResultSet> res(countStmt->executeQuery());
+        countReportsStmt->setInt(1, articleId);
+        std::unique_ptr<sql::ResultSet> reportCountResult(countReportsStmt->executeQuery());
         int reportCount = 0;
-        if (res->next()) {
-            reportCount = res->getInt("count");
+        if (reportCountResult->next()) {
+            reportCount = reportCountResult->getInt("count");
         }
-        // Auto-hide if threshold reached
+        std::cout << "[NewsController] Article " << articleId << " has " << reportCount << " reports" << std::endl;
         if (reportCount >= reportThreshold) {
-            std::unique_ptr<sql::PreparedStatement> hideStmt(
-                conn->prepareStatement("UPDATE articles SET is_hidden = TRUE WHERE id = ?")
+            std::unique_ptr<sql::PreparedStatement> hideArticleStmt(
+                dbConnection->prepareStatement("UPDATE articles SET is_hidden = TRUE WHERE id = ?")
             );
-            hideStmt->setInt(1, articleId);
-            hideStmt->execute();
+            hideArticleStmt->setInt(1, articleId);
+            hideArticleStmt->execute();
+            std::cout << "[NewsController] Article " << articleId << " auto-hidden due to report threshold" << std::endl;
         }
+        // Notify all admins
+        UserRepository userRepository(dbConn);
+        NotificationRepository notificationRepository(dbConn);
+        auto adminUsers = userRepository.getAllAdmins();
+        std::string articleTitle;
+        // Fetch article title for notification
+        try {
+            std::unique_ptr<sql::PreparedStatement> getTitleStmt(
+                dbConnection->prepareStatement("SELECT title FROM articles WHERE id = ?")
+            );
+            getTitleStmt->setInt(1, articleId);
+            std::unique_ptr<sql::ResultSet> articleResult(getTitleStmt->executeQuery());
+            if (articleResult->next()) {
+                articleTitle = articleResult->getString("title");
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[NewsController] Error fetching article title: " << e.what() << std::endl;
+        }
+        for (const auto& admin : adminUsers) {
+            Notification notification;
+            notification.userId = admin.id;
+            notification.type = "report";
+            notification.articleId = articleId;
+            notification.message = "Article reported: '" + articleTitle + "' (ID: " + std::to_string(articleId) + ")";
+            notificationRepository.createNotification(notification);
+        }
+        std::cout << "[NewsController] Admins notified for reported article " << articleId << std::endl;
+        std::cout << "[NewsController] reportArticle completed successfully" << std::endl;
         return crow::response(200, "Report submitted successfully");
     } catch (const std::exception& e) {
         std::cerr << "[NewsController] reportArticle error: " << e.what() << std::endl;

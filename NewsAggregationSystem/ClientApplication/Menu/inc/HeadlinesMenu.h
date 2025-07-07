@@ -4,15 +4,15 @@
 
 class HeadlinesMenu {
 public:
-    HeadlinesMenu(Client& client, Session& session);
+    HeadlinesMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
 
-    void viewTodayHeadlines();
-    void viewDateRangeHeadlines();
-    void fetchAndDisplayArticles(const std::string& start, const std::string& end, const std::string& category);
-    std::string selectCategory();
+    void displayTodayHeadlines();
+    void displayDateRangeHeadlines();
+    void fetchAndDisplayArticlesTable(const std::string& start, const std::string& end, const std::string& category);
+    std::string selectHeadlineCategory();
 };

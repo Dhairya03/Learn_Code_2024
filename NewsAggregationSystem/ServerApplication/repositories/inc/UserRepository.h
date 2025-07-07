@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include "database/inc/DBConnection.h"
+#include <vector>
 
 class UserRepository {
 public:
@@ -13,6 +14,7 @@ public:
     bool createUser(const User& user);
     std::optional<User> findByEmailAndPassword(const std::string& email, const std::string& password);
     User getUserById(int userId);
+    std::vector<User> getAllAdmins();
 
 private:
     std::shared_ptr<DBConnection> db;

@@ -29,7 +29,13 @@ file(GLOB_RECURSE SERVER_HEADERS
 )
 
 # Create target
-add_executable(server_main main.cpp ${SERVER_SOURCES})
+add_executable(server_main
+    main.cpp
+    jobs/src/NewsFetchJob.cpp
+    utils/NewsApiOrgAdapter.cpp
+    utils/TheNewsApiAdapter.cpp
+    ${SERVER_SOURCES}
+)
 
 # Include directories based on actual structure
 target_include_directories(server_main PRIVATE

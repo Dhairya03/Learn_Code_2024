@@ -6,12 +6,12 @@
 #include <iostream>
 #include <ctime>
 
-UserMenu::UserMenu(Client& c, Session& s) : client(c), session(s) {}
+UserMenu::UserMenu(Client& httpClient, Session& userSession) : httpClient(httpClient), userSession(userSession) {}
 
 void UserMenu::display() {
     while (true) {
         time_t now = time(nullptr);
-        std::cout << "\nWelcome to the News Application, " << session.getUsername()
+        std::cout << "\nWelcome to the News Application, " << userSession.getUsername()
                   << "! Date: " << std::ctime(&now)
                   << "Please choose the options below:\n"
                   << "1. Headlines\n"
@@ -25,28 +25,28 @@ void UserMenu::display() {
         std::cin.ignore();
 
         switch (choice) {
-            case 1: showHeadlines(); break;
-            case 2: showSavedArticles(); break;
-            case 3: showSearch(); break;
-            case 4: showNotifications(); break;
+            case 1: displayHeadlines(); break;
+            case 2: displaySavedArticles(); break;
+            case 3: displaySearch(); break;
+            case 4: displayNotifications(); break;
             case 5: return;
             default: std::cout << "Invalid option.\n";
         }
     }
 }
 
-void UserMenu::showHeadlines() {
-    HeadlinesMenu(client, session).display();
+void UserMenu::displayHeadlines() {
+    HeadlinesMenu(httpClient, userSession).display();
 }
 
-void UserMenu::showSavedArticles() {
-    SavedMenu(client, session).display();
+void UserMenu::displaySavedArticles() {
+    SavedMenu(httpClient, userSession).display();
 }
 
-void UserMenu::showSearch() {
-    SearchMenu(client, session).display();
+void UserMenu::displaySearch() {
+    SearchMenu(httpClient, userSession).display();
 }
 
-void UserMenu::showNotifications() {
-    NotificationMenu(client, session).display();
+void UserMenu::displayNotifications() {
+    NotificationMenu(httpClient, userSession).display();
 }

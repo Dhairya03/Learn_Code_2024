@@ -3,10 +3,11 @@
 #include "../../Services/inc/SavedArticleService.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <iomanip>
 
 using json = nlohmann::json;
 
-HeadlinesMenu::HeadlinesMenu(Client& c, Session& s) : client(c), session(s) {}
+HeadlinesMenu::HeadlinesMenu(Client& httpClient, Session& userSession) : httpClient(httpClient), userSession(userSession) {}
 
 void HeadlinesMenu::display() {
     std::cout << "\nHeadlines:\n"
@@ -18,30 +19,30 @@ void HeadlinesMenu::display() {
     std::cin.ignore();
 
     switch (choice) {
-        case 1: viewTodayHeadlines(); break;
-        case 2: viewDateRangeHeadlines(); break;
+        case 1: displayTodayHeadlines(); break;
+        case 2: displayDateRangeHeadlines(); break;
         case 3: exit(0);
         default: std::cout << "Invalid option.\n";
     }
 }
 
-void HeadlinesMenu::viewTodayHeadlines() {
+void HeadlinesMenu::displayTodayHeadlines() {
     std::string today = ArticleService::getTodayDate();
-    fetchAndDisplayArticles(today, today, "all");
+    fetchAndDisplayArticlesTable(today, today, "all");
 }
 
-void HeadlinesMenu::viewDateRangeHeadlines() {
+void HeadlinesMenu::displayDateRangeHeadlines() {
     std::string start, end;
     std::cout << "Enter start date (YYYY-MM-DD): ";
     std::getline(std::cin, start);
     std::cout << "Enter end date (YYYY-MM-DD): ";
     std::getline(std::cin, end);
 
-    std::string category = selectCategory();
-    fetchAndDisplayArticles(start, end, category);
+    std::string category = selectHeadlineCategory();
+    fetchAndDisplayArticlesTable(start, end, category);
 }
 
-std::string HeadlinesMenu::selectCategory() {
+std::string HeadlinesMenu::selectHeadlineCategory() {
     std::cout << "\nPlease choose the options below for Headlines:\n"
               << "1. All\n2. Business\n3. Entertainment\n4. Sports\n5. Technology\n6. General\n>> ";
     int opt;
@@ -59,16 +60,24 @@ std::string HeadlinesMenu::selectCategory() {
     }
 }
 
-void HeadlinesMenu::fetchAndDisplayArticles(const std::string& start, const std::string& end, const std::string& category) {
-    auto articles = ArticleService(client).getArticles(start, end, category);
+void HeadlinesMenu::fetchAndDisplayArticlesTable(const std::string& start, const std::string& end, const std::string& category) {
+    auto articles = ArticleService(httpClient).getArticles(start, end, category);
 
-    std::cout << "\nH E A D L I N E S\n";
-    for (const auto& a : articles) {
-        std::cout << "Article ID: " << a["id"] << "\nTitle: " << a["title"]
-                  << "\nSource: " << a["source"] << "\nURL: " << a["url"]
-                  << "\nCategory: " << a["category"] << "\n\n";
+    if (articles.empty()) {
+        std::cout << "\nNo articles found.\n";
+    } else {
+        std::cout << "\n+-----+----------------------------------------------------------+-------------------+--------------+------------------------------------------+\n";
+        std::cout << "| ID  | Title                                                    | Source            | Category     | URL                                      |\n";
+        std::cout << "+-----+----------------------------------------------------------+-------------------+--------------+------------------------------------------+\n";
+        for (const auto& a : articles) {
+            std::cout << "| " << std::setw(3) << a["id"] << " | "
+                      << std::setw(58) << a["title"].get<std::string>().substr(0,58) << " | "
+                      << std::setw(17) << a["source"].get<std::string>().substr(0,17) << " | "
+                      << std::setw(12) << a["category"].get<std::string>().substr(0,12) << " | "
+                      << std::setw(40) << a["url"].get<std::string>().substr(0,40) << " |\n";
+        }
+        std::cout << "+-----+----------------------------------------------------------+-------------------+--------------+------------------------------------------+\n";
     }
-
     std::cout << "1. Back\n2. Logout\n3. Save Article\n4. Like Article\n5. Dislike Article\n6. Report Article\n>> ";
     int action;
     std::cin >> action;
@@ -79,7 +88,7 @@ void HeadlinesMenu::fetchAndDisplayArticles(const std::string& start, const std:
         std::cout << "Enter Article ID to save: ";
         std::cin >> id;
         std::cin.ignore();
-        SavedArticleService(client, session).saveArticle(id);
+        SavedArticleService(httpClient, userSession).saveArticle(id);
     } else if (action == 4) {
         int id;
         std::cout << "Enter Article ID to like: ";
@@ -97,8 +106,8 @@ void HeadlinesMenu::fetchAndDisplayArticles(const std::string& start, const std:
         std::cout << "Enter Article ID to report: ";
         std::cin >> id;
         std::cin.ignore();
-        nlohmann::json body = { {"user_id", session.getUserId()}, {"article_id", id} };
-        std::string res = client.post("/articles/report", body.dump());
+        nlohmann::json body = { {"user_id", userSession.getUserId()}, {"article_id", id} };
+        std::string res = httpClient.post("/articles/report", body.dump());
         std::cout << "Server: " << res << "\n";
     } else if (action == 2) {
         exit(0);

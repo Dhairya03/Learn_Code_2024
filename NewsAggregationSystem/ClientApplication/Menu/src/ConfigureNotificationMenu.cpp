@@ -5,12 +5,13 @@
 
 using json = nlohmann::json;
 
-ConfigureNotificationMenu::ConfigureNotificationMenu(Client& c, Session& s) : client(c), session(s), notificationService(c) {}
+ConfigureNotificationMenu::ConfigureNotificationMenu(Client& httpClient, Session& userSession)
+    : httpClient(httpClient), userSession(userSession), notificationService(httpClient) {}
 
 void ConfigureNotificationMenu::display() {
     while (true) {
         // Get current settings
-        auto settings = notificationService.getUserNotificationSettings(session.getUserId());
+        auto settings = notificationService.getUserNotificationSettings(userSession.getUserId());
         
         std::cout << "\nC O N F I G U R E - N O T I F I C A T I O N S\n"
                   << "1. Business - " << (settings.value("business_enabled", false) ? "Enabled" : "Disabled") << "\n"
@@ -27,9 +28,9 @@ void ConfigureNotificationMenu::display() {
         std::cin.ignore();
 
         if (choice >= 1 && choice <= 4) {
-            toggleCategory(choice);
+            toggleCategorySetting(choice);
         } else if (choice == 5) {
-            configureKeywords();
+            configureNotificationKeywords();
         } else if (choice == 6) {
             return;
         } else if (choice == 7) {
@@ -40,13 +41,13 @@ void ConfigureNotificationMenu::display() {
     }
 }
 
-void ConfigureNotificationMenu::toggleCategory(int categoryId) {
+void ConfigureNotificationMenu::toggleCategorySetting(int categoryId) {
     std::string status;
     std::cout << "Enable or Disable this category? (enable/disable): ";
     std::getline(std::cin, status);
 
     bool enabled = (status == "enable");
-    bool success = notificationService.updateCategorySettings(session.getUserId(), categoryId, enabled);
+    bool success = notificationService.updateCategorySettings(userSession.getUserId(), categoryId, enabled);
     
     if (success) {
         std::cout << "Category settings updated successfully.\n";
@@ -55,12 +56,12 @@ void ConfigureNotificationMenu::toggleCategory(int categoryId) {
     }
 }
 
-void ConfigureNotificationMenu::configureKeywords() {
+void ConfigureNotificationMenu::configureNotificationKeywords() {
     std::string keywords;
     std::cout << "Enter keywords separated by commas (e.g., Tesla, Election, Crypto): ";
     std::getline(std::cin, keywords);
 
-    bool success = notificationService.updateKeywords(session.getUserId(), keywords);
+    bool success = notificationService.updateKeywords(userSession.getUserId(), keywords);
     
     if (success) {
         std::cout << "Keywords updated successfully.\n";

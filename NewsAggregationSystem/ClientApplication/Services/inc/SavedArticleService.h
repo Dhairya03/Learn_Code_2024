@@ -4,11 +4,11 @@
 
 class SavedArticleService {
 public:
-    SavedArticleService(Client& client, Session& session);
+    SavedArticleService(Client& httpClient, Session& userSession);
     void saveArticle(int articleId);
     void deleteArticle(int articleId);
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
 };

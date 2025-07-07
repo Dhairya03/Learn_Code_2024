@@ -11,6 +11,11 @@ public:
     static crow::response getExternalServerDetails(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
     static crow::response updateApiKey(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
     static crow::response addCategory(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
+    static crow::response getReportedArticles(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
+    static crow::response hideArticle(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
+    static crow::response unhideArticle(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
+    static crow::response hideCategory(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
+    static crow::response unhideCategory(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
 };
 
 #endif

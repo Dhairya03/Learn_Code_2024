@@ -5,14 +5,14 @@
 
 class ConfigureNotificationMenu {
 public:
-    ConfigureNotificationMenu(Client& client, Session& session);
+    ConfigureNotificationMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
     NotificationService notificationService;
 
-    void toggleCategory(int categoryId);
-    void configureKeywords();
+    void toggleCategorySetting(int categoryId);
+    void configureNotificationKeywords();
 };

@@ -11,10 +11,10 @@ NewsArticleRepository::NewsArticleRepository(std::shared_ptr<DBConnection> dbCon
 
 void NewsArticleRepository::createTablesIfNotExist()
 {
+    std::cout << "[NewsArticleRepository] createTablesIfNotExist called" << std::endl;
     auto conn = db->getConnection();
     try
     {
-        // Add is_hidden column to articles if it doesn't exist
         std::string addIsHiddenColumn = R"(
             ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE
         )";
@@ -25,10 +25,8 @@ void NewsArticleRepository::createTablesIfNotExist()
         }
         catch (const sql::SQLException &e)
         {
-            // Ignore error if column already exists (for MySQL < 8.0.29, IF NOT EXISTS is not supported)
+            std::cerr << "[NewsArticleRepository] Error adding is_hidden column: " << e.what() << std::endl;
         }
-
-        // Create reports table
         std::string createReportsTable = R"(
             CREATE TABLE IF NOT EXISTS reports (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,8 +39,6 @@ void NewsArticleRepository::createTablesIfNotExist()
         )";
         auto stmt1 = conn->createStatement();
         stmt1->execute(createReportsTable);
-
-        // Create hidden_categories table
         std::string createHiddenCategoriesTable = R"(
             CREATE TABLE IF NOT EXISTS hidden_categories (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -52,8 +48,6 @@ void NewsArticleRepository::createTablesIfNotExist()
         )";
         auto stmt2 = conn->createStatement();
         stmt2->execute(createHiddenCategoriesTable);
-
-        // Create blocked_keywords table
         std::string createBlockedKeywordsTable = R"(
             CREATE TABLE IF NOT EXISTS blocked_keywords (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -62,6 +56,7 @@ void NewsArticleRepository::createTablesIfNotExist()
         )";
         auto stmt3 = conn->createStatement();
         stmt3->execute(createBlockedKeywordsTable);
+        std::cout << "[NewsArticleRepository] createTablesIfNotExist success" << std::endl;
     }
     catch (const sql::SQLException &e)
     {
@@ -71,19 +66,16 @@ void NewsArticleRepository::createTablesIfNotExist()
 
 std::vector<NewsArticle> NewsArticleRepository::getAllArticles()
 {
+    std::cout << "[NewsArticleRepository] getAllArticles called" << std::endl;
     std::vector<NewsArticle> articles;
-
     if (!db || !db->isConnected())
         return articles;
-
     try
     {
         auto conn = db->getConnection();
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn->prepareStatement("SELECT id, title, description, url, source, published_at FROM articles ORDER BY published_at DESC LIMIT 50"));
-
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-
         while (res->next())
         {
             NewsArticle article;
@@ -93,25 +85,23 @@ std::vector<NewsArticle> NewsArticleRepository::getAllArticles()
             article.url = res->getString("url");
             article.source = res->getString("source");
             article.publishedAt = res->getString("published_at");
-
             articles.push_back(article);
         }
+        std::cout << "[NewsArticleRepository] getAllArticles success" << std::endl;
     }
     catch (const sql::SQLException &e)
     {
         std::cerr << "[NewsArticleRepository] Error: " << e.what() << "\n";
     }
-
     return articles;
 }
 
 std::vector<NewsArticle> NewsArticleRepository::getArticlesByCategory(const std::string &categoryName)
 {
+    std::cout << "[NewsArticleRepository] getArticlesByCategory called" << std::endl;
     std::vector<NewsArticle> articles;
-
     if (!db || !db->isConnected())
         return articles;
-
     try
     {
         auto conn = db->getConnection();
@@ -122,10 +112,8 @@ std::vector<NewsArticle> NewsArticleRepository::getArticlesByCategory(const std:
                 "JOIN categories c ON a.category_id = c.id "
                 "WHERE c.name = ? "
                 "ORDER BY a.published_at DESC"));
-
         stmt->setString(1, categoryName);
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-
         while (res->next())
         {
             NewsArticle article;
@@ -135,15 +123,14 @@ std::vector<NewsArticle> NewsArticleRepository::getArticlesByCategory(const std:
             article.url = res->getString("url");
             article.source = res->getString("source");
             article.publishedAt = res->getString("published_at");
-
             articles.push_back(article);
         }
+        std::cout << "[NewsArticleRepository] getArticlesByCategory success" << std::endl;
     }
     catch (const sql::SQLException &e)
     {
         std::cerr << "[NewsArticleRepository] Category fetch error: " << e.what() << "\n";
     }
-
     return articles;
 }
 

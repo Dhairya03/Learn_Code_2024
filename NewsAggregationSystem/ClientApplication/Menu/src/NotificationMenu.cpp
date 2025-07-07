@@ -3,10 +3,12 @@
 #include "../../Services/inc/NotificationService.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <iomanip>
 
 using json = nlohmann::json;
 
-NotificationMenu::NotificationMenu(Client& c, Session& s) : client(c), session(s), notificationService(c) {}
+NotificationMenu::NotificationMenu(Client& httpClient, Session& userSession)
+    : httpClient(httpClient), userSession(userSession), notificationService(httpClient) {}
 
 void NotificationMenu::display() {
     while (true) {
@@ -21,8 +23,8 @@ void NotificationMenu::display() {
         std::cin.ignore();
 
         switch (choice) {
-            case 1: viewNotifications(); break;
-            case 2: configureNotifications(); break;
+            case 1: displayNotificationsTable(); break;
+            case 2: displayConfigureNotificationsMenu(); break;
             case 3: return;
             case 4: exit(0);
             default: std::cout << "Invalid option.\n";
@@ -30,25 +32,29 @@ void NotificationMenu::display() {
     }
 }
 
-void NotificationMenu::viewNotifications() {
-    auto notifications = notificationService.getNotifications(session.getUserId());
-    
+void NotificationMenu::displayNotificationsTable() {
+    auto notifications = notificationService.getNotifications(userSession.getUserId());
     if (notifications.empty()) {
         std::cout << "\nNo notifications found.\n";
         return;
     }
-    
-    std::cout << "\nYou have " << notifications.size() << " notifications:\n";
+    std::cout << "\n+----------------------------------------------------------+--------------+---------------------+-------------------+\n";
+    std::cout << "| Message                                                  | Type         | Timestamp           | Category          |\n";
+    std::cout << "+----------------------------------------------------------+--------------+---------------------+-------------------+\n";
     for (const auto& notification : notifications) {
-        std::cout << "- " << notification["message"] << " (" << notification["timestamp"] << ")\n";
-        std::cout << "  Type: " << notification["type"] << "\n";
+        std::cout << "| " << std::setw(58) << notification["message"].get<std::string>().substr(0,58) << " | "
+                  << std::setw(12) << notification["type"].get<std::string>().substr(0,12) << " | "
+                  << std::setw(19) << notification["timestamp"].get<std::string>().substr(0,19) << " | ";
         if (notification.contains("category_name") && !notification["category_name"].is_null()) {
-            std::cout << "  Category: " << notification["category_name"] << "\n";
+            std::cout << std::setw(17) << notification["category_name"].get<std::string>().substr(0,17);
+        } else {
+            std::cout << std::setw(17) << "-";
         }
-        std::cout << "\n";
+        std::cout << " |\n";
     }
+    std::cout << "+----------------------------------------------------------+--------------+---------------------+-------------------+\n";
 }
 
-void NotificationMenu::configureNotifications() {
-    ConfigureNotificationMenu(client, session).display();
+void NotificationMenu::displayConfigureNotificationsMenu() {
+    ConfigureNotificationMenu(httpClient, userSession).display();
 }

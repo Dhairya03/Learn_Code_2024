@@ -4,15 +4,18 @@
 
 class AdminMenu {
 public:
-    AdminMenu(Client& client, Session& session);
+    AdminMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
 
-    void viewServerStatus();
-    void viewServerDetails();
-    void updateServerDetails();
-    void addCategory();
+    void displayServerStatus();
+    void displayServerDetails();
+    void updateServerApiKey();
+    void addNewsCategory();
+    void displayReportedArticles();
+    void toggleCategoryVisibility();
+    void displayNotifications();
 };

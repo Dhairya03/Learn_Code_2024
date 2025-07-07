@@ -9,7 +9,14 @@ std::vector<nlohmann::json> ArticleService::getArticles(const std::string& start
     std::string response = client.get(endpoint);
 
     try {
-        return nlohmann::json::parse(response);
+        auto parsed = nlohmann::json::parse(response);
+        if (parsed.is_array()) {
+            return parsed;
+        } else if (parsed.is_object() && parsed.contains("data")) {
+            return parsed["data"].get<std::vector<nlohmann::json>>();
+        } else {
+            return {};
+        }
     } catch (...) {
         return {};
     }

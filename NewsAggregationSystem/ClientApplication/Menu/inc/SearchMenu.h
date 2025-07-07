@@ -5,11 +5,13 @@
 
 class SearchMenu {
 public:
-    SearchMenu(Client& client, Session& session);
+    SearchMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
     ArticleService articleService;
+
+    void displaySearchResults();
 };

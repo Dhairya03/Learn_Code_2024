@@ -4,15 +4,15 @@
 
 class UserMenu {
 public:
-    UserMenu(Client& client, Session& session);
+    UserMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
 
-    void showHeadlines();
-    void showSavedArticles();
-    void showSearch();
-    void showNotifications();
+    void displayHeadlines();
+    void displaySavedArticles();
+    void displaySearch();
+    void displayNotifications();
 };

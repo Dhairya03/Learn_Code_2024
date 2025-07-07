@@ -4,13 +4,13 @@
 
 class SavedMenu {
 public:
-    SavedMenu(Client& client, Session& session);
+    SavedMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
 
-    void showSavedArticles();
-    void deleteSavedArticle();
+    void displaySavedArticlesTable();
+    void removeSavedArticle();
 };

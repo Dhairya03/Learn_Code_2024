@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-HomeMenu::HomeMenu(Client& c, Session& s) : client(c), session(s) {}
+HomeMenu::HomeMenu(Client& httpClient, Session& userSession) : httpClient(httpClient), userSession(userSession) {}
 
 void HomeMenu::display() {
     while (true) {
@@ -22,22 +22,22 @@ void HomeMenu::display() {
         std::cin.ignore();
 
         switch (choice) {
-            case 1: login(); break;
-            case 2: signup(); break;
-            case 3: exit(0);
+            case 1: displayLogin(); break;
+            case 2: displaySignup(); break;
+            case 3: exitApplication(); break;
             default: std::cout << "Invalid option.\n";
         }
     }
 }
 
-void HomeMenu::login() {
+void HomeMenu::displayLogin() {
     std::string email, password;
     std::cout << "Email: ";
     std::getline(std::cin, email);
     std::cout << "Password: ";
     std::getline(std::cin, password);
 
-    AuthService authService(client);
+    AuthService authService(httpClient);
     std::string response = authService.login(email, password);
     std::cout << "\nResponse from server: " << response << "\n";
 
@@ -48,14 +48,14 @@ void HomeMenu::login() {
             
             if (res.contains("user_id")) {
                 if (res["user_id"].is_number()) {
-                    session.setUserId(res.value("user_id", 0));
+                    userSession.setUserId(res.value("user_id", 0));
                 } 
             }
             
             if (res.contains("email")) {
-                session.setEmail(res.value("email", email));
+                userSession.setEmail(res.value("email", email));
             } else if (res.contains("username")) {
-                session.setUsername(res.value("username", ""));
+                userSession.setUsername(res.value("username", ""));
             }
 
             std::string userRole = "user"; 
@@ -67,14 +67,13 @@ void HomeMenu::login() {
                     userRole = (roleNum == 1) ? "admin" : "user";
                 }
             }
-            session.setRole(userRole);
+            userSession.setRole(userRole);
 
             if (userRole == "admin") {
-                AdminMenu(client, session).display();
+                AdminMenu(httpClient, userSession).display();
             } else {
-                UserMenu(client, session).display();
+                UserMenu(httpClient, userSession).display();
             }
-        
         } else {
             std::cout << "Login failed: " << res.value("message", "Unknown error") << "\n";
         }
@@ -84,7 +83,7 @@ void HomeMenu::login() {
     }
 }
 
-void HomeMenu::signup() {
+void HomeMenu::displaySignup() {
     std::string username, email, password;
 
     std::cout << "Username: ";
@@ -104,7 +103,7 @@ void HomeMenu::signup() {
         return;
     }
 
-    AuthService authService(client);
+    AuthService authService(httpClient);
     std::string response = authService.signup(username, email, password);
 
     try {
@@ -117,4 +116,9 @@ void HomeMenu::signup() {
     } catch (const std::exception& e) {
         std::cout << "Invalid response from server: " << e.what() << "\n";
     }
+}
+
+void HomeMenu::exitApplication() {
+    std::cout << "Exiting application. Goodbye!\n";
+    exit(0);
 }

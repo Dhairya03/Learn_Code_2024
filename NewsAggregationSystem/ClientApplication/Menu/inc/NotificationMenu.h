@@ -5,14 +5,14 @@
 
 class NotificationMenu {
 public:
-    NotificationMenu(Client& client, Session& session);
+    NotificationMenu(Client& httpClient, Session& userSession);
     void display();
 
 private:
-    Client& client;
-    Session& session;
+    Client& httpClient;
+    Session& userSession;
     NotificationService notificationService;
 
-    void viewNotifications();
-    void configureNotifications();
+    void displayNotificationsTable();
+    void displayConfigureNotificationsMenu();
 };

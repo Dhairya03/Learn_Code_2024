@@ -7,20 +7,34 @@
 #include "controllers/inc/NotificationController.h"
 #include "database/inc/DBConnection.h"
 #include "jobs/inc/NewsFetchJob.h"
+#include "utils/NewsApiOrgAdapter.h"
+#include "utils/TheNewsApiAdapter.h"
 #include <thread>
 #include <iostream>
 #include <chrono>
 
 void startNewsFetcher(std::shared_ptr<DBConnection> dbConn) {
     std::thread([dbConn]() {
-        NewsFetchJob job(dbConn);
-
+        std::string apiKey1 = "8f4cda27870e4de79de71ec7876d3733"; // NewsApiOrg
+        std::string apiKey2 = "PLFrdIv6ewEpzWbUrL2MXBn5Z6ZtD7AAuD5rUUhY"; // TheNewsApi
+        bool useFirst = true;
         while (true) {
-            std::cout << "[NewsFetchJob Thread] Running at " << std::time(nullptr) << "\n";
+            std::unique_ptr<INewsApiAdapter> adapter;
+            if (useFirst) {
+                std::cout << "[startNewsFetcher] Using NewsApiOrgAdapter" << std::endl;
+                adapter = std::make_unique<NewsApiOrgAdapter>(apiKey1);
+            } else {
+                std::cout << "[startNewsFetcher] Using TheNewsApiAdapter" << std::endl;
+                adapter = std::make_unique<TheNewsApiAdapter>(apiKey2);
+            }
+            NewsFetchJob job(dbConn, std::move(adapter));
             job.run();
-       
-            // std::this_thread::sleep_for(std::chrono::hours(3));
-            std::this_thread::sleep_for(std::chrono::minutes(10)); 
+            // Check if articles were fetched (by checking DB or logs). For now, alternate if no articles fetched.
+            // In a real system, you might want to check the return value or DB state.
+            // Here, we alternate if the last fetch failed (simulate by checking logs or a flag).
+            // For simplicity, alternate every time for now:
+            useFirst = !useFirst;
+            std::this_thread::sleep_for(std::chrono::minutes(10));
         }
     }).detach();
 }
@@ -141,6 +155,31 @@ int main() {
     CROW_ROUTE(app, "/articles/report").methods("POST"_method)
     ([dbConn](const crow::request& req) {
         return NewsController::reportArticle(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/admin/reported_articles").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return AdminController::getReportedArticles(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/admin/hide_article").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return AdminController::hideArticle(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/admin/unhide_article").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return AdminController::unhideArticle(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/admin/hide_category").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return AdminController::hideCategory(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/admin/unhide_category").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return AdminController::unhideCategory(req, dbConn);
     });
 
     startNewsFetcher(dbConn);
