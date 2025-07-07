@@ -3,6 +3,8 @@
 #include "lib/json/json.hpp"
 #include <iostream>
 #include <string>
+#include <cppconn/prepared_statement.h>
+#include <cppconn/resultset.h>
 
 using json = nlohmann::json;
 
@@ -169,5 +171,47 @@ crow::response NewsController::searchNews(const crow::request& req, std::shared_
     } catch (const std::exception& e) {
         std::cerr << "Error in searchNews: " << e.what() << std::endl;
         return crow::response(500, "Internal server error");
+    }
+}
+
+crow::response NewsController::reportArticle(const crow::request& req, std::shared_ptr<DBConnection> dbConn) {
+    try {
+        auto body = nlohmann::json::parse(req.body);
+        if (!body.contains("user_id") || !body.contains("article_id")) {
+            return crow::response(400, "Missing user_id or article_id");
+        }
+        int userId = body["user_id"];
+        int articleId = body["article_id"];
+        int reportThreshold = 3; // You can adjust this threshold
+        auto conn = dbConn->getConnection();
+        // Insert report
+        std::unique_ptr<sql::PreparedStatement> insertStmt(
+            conn->prepareStatement("INSERT INTO reports (article_id, user_id) VALUES (?, ?)")
+        );
+        insertStmt->setInt(1, articleId);
+        insertStmt->setInt(2, userId);
+        insertStmt->execute();
+        // Count reports for this article
+        std::unique_ptr<sql::PreparedStatement> countStmt(
+            conn->prepareStatement("SELECT COUNT(*) as count FROM reports WHERE article_id = ?")
+        );
+        countStmt->setInt(1, articleId);
+        std::unique_ptr<sql::ResultSet> res(countStmt->executeQuery());
+        int reportCount = 0;
+        if (res->next()) {
+            reportCount = res->getInt("count");
+        }
+        // Auto-hide if threshold reached
+        if (reportCount >= reportThreshold) {
+            std::unique_ptr<sql::PreparedStatement> hideStmt(
+                conn->prepareStatement("UPDATE articles SET is_hidden = TRUE WHERE id = ?")
+            );
+            hideStmt->setInt(1, articleId);
+            hideStmt->execute();
+        }
+        return crow::response(200, "Report submitted successfully");
+    } catch (const std::exception& e) {
+        std::cerr << "[NewsController] reportArticle error: " << e.what() << std::endl;
+        return crow::response(500, "Failed to report article");
     }
 }

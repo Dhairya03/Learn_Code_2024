@@ -138,6 +138,11 @@ int main() {
         return NewsController::searchNews(req, dbConn);
     });
 
+    CROW_ROUTE(app, "/articles/report").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return NewsController::reportArticle(req, dbConn);
+    });
+
     startNewsFetcher(dbConn);
 
     std::cout << "Server running on port 8080...\n";

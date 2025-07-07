@@ -4,7 +4,70 @@
 #include <iostream>
 #include <regex>
 
-NewsArticleRepository::NewsArticleRepository(std::shared_ptr<DBConnection> dbConn) : db(std::move(dbConn)) {}
+NewsArticleRepository::NewsArticleRepository(std::shared_ptr<DBConnection> dbConn) : db(std::move(dbConn))
+{
+    createTablesIfNotExist();
+}
+
+void NewsArticleRepository::createTablesIfNotExist()
+{
+    auto conn = db->getConnection();
+    try
+    {
+        // Add is_hidden column to articles if it doesn't exist
+        std::string addIsHiddenColumn = R"(
+            ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE
+        )";
+        try
+        {
+            auto stmt = conn->createStatement();
+            stmt->execute(addIsHiddenColumn);
+        }
+        catch (const sql::SQLException &e)
+        {
+            // Ignore error if column already exists (for MySQL < 8.0.29, IF NOT EXISTS is not supported)
+        }
+
+        // Create reports table
+        std::string createReportsTable = R"(
+            CREATE TABLE IF NOT EXISTS reports (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                article_id INT NOT NULL,
+                user_id INT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        )";
+        auto stmt1 = conn->createStatement();
+        stmt1->execute(createReportsTable);
+
+        // Create hidden_categories table
+        std::string createHiddenCategoriesTable = R"(
+            CREATE TABLE IF NOT EXISTS hidden_categories (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                category_id INT NOT NULL,
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+            )
+        )";
+        auto stmt2 = conn->createStatement();
+        stmt2->execute(createHiddenCategoriesTable);
+
+        // Create blocked_keywords table
+        std::string createBlockedKeywordsTable = R"(
+            CREATE TABLE IF NOT EXISTS blocked_keywords (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                keyword VARCHAR(255) NOT NULL UNIQUE
+            )
+        )";
+        auto stmt3 = conn->createStatement();
+        stmt3->execute(createBlockedKeywordsTable);
+    }
+    catch (const sql::SQLException &e)
+    {
+        std::cerr << "[NewsArticleRepository] Error creating tables/columns: " << e.what() << std::endl;
+    }
+}
 
 std::vector<NewsArticle> NewsArticleRepository::getAllArticles()
 {

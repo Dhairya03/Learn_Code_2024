@@ -18,6 +18,7 @@ public:
 
 private:
     std::shared_ptr<DBConnection> db;
+    void createTablesIfNotExist();
 };
 
 #endif

@@ -13,6 +13,7 @@ public:
     static crow::response getTodayNews(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
     static crow::response getNewsByDateAndCategory(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
     static crow::response searchNews(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
+    static crow::response reportArticle(const crow::request& req, std::shared_ptr<DBConnection> dbConn);
 };
 
 #endif
