@@ -102,29 +102,123 @@ void AdminMenu::updateServerApiKey() {
     std::cin.ignore();
     std::cout << "Enter the updated API key: ";
     std::getline(std::cin, newApiKey);
-    // Implement API call to update the API key here
-    std::cout << "API key updated for server ID " << id << ".\n";
+    
+    json requestData;
+    requestData["id"] = id;
+    requestData["api_key"] = newApiKey;
+    
+    std::string resStr = httpClient.put("/admin/servers/update", requestData.dump());
+    try {
+        auto response = json::parse(resStr);
+        if (response["success"]) {
+            std::cout << "API key updated successfully for server ID " << id << ".\n";
+        } else {
+            std::cout << "Error: " << response.value("message", "Failed to update API key") << "\n";
+        }
+    } catch (const std::exception& e) {
+        std::cout << "Failed to update API key: " << e.what() << "\n";
+    }
 }
 
 void AdminMenu::addNewsCategory() {
     std::string categoryName;
     std::cout << "Enter new category name: ";
     std::getline(std::cin, categoryName);
-    // Implement API call to add category here
-    std::cout << "Category '" << categoryName << "' added.\n";
+    
+    json requestData;
+    requestData["name"] = categoryName;
+    
+    std::string resStr = httpClient.post("/admin/categories/add", requestData.dump());
+    try {
+        auto response = json::parse(resStr);
+        if (response["success"]) {
+            std::cout << "Category '" << categoryName << "' added successfully.\n";
+        } else {
+            std::cout << "Error: " << response.value("message", "Failed to add category") << "\n";
+        }
+    } catch (const std::exception& e) {
+        std::cout << "Failed to add category: " << e.what() << "\n";
+    }
 }
 
 void AdminMenu::displayReportedArticles() {
-    // Implement logic to display reported articles
-    std::cout << "Displaying reported articles (not yet implemented).\n";
+    std::string resStr = httpClient.get("/admin/articles/reported");
+    try {
+        auto response = json::parse(resStr);
+        if (!response["success"]) {
+            std::cout << "Error: " << response.value("message", "Unknown error") << "\n";
+            return;
+        }
+        auto data = response["data"];
+        if (data.empty()) {
+            std::cout << "No reported articles found.\n";
+            return;
+        }
+        std::cout << "\nReported Articles:\n";
+        std::cout << "+----+--------------------------------+------------------+----------+\n";
+        std::cout << "| ID | Title                          | Source           | Reports  |\n";
+        std::cout << "+----+--------------------------------+------------------+----------+\n";
+        for (const auto& article : data) {
+            std::cout << "| "
+                      << std::setw(2) << article["id"] << " | "
+                      << std::setw(30) << article["title"].get<std::string>().substr(0,30) << " | "
+                      << std::setw(16) << article["source"].get<std::string>().substr(0,16) << " | "
+                      << std::setw(8) << article["report_count"] << " |\n";
+        }
+        std::cout << "+----+--------------------------------+------------------+----------+\n";
+    } catch (const std::exception& e) {
+        std::cout << "Failed to parse reported articles: " << e.what() << "\n";
+    }
 }
 
 void AdminMenu::toggleCategoryVisibility() {
-    // Implement logic to hide/unhide category
-    std::cout << "Toggling category visibility (not yet implemented).\n";
+    int categoryId;
+    std::cout << "Enter category ID to toggle visibility: ";
+    std::cin >> categoryId;
+    std::cin.ignore();
+    
+    json requestData;
+    requestData["category_id"] = categoryId;
+    
+    std::string resStr = httpClient.put("/admin/categories/toggle-visibility", requestData.dump());
+    try {
+        auto response = json::parse(resStr);
+        if (response["success"]) {
+            std::cout << "Category visibility toggled successfully for ID " << categoryId << ".\n";
+        } else {
+            std::cout << "Error: " << response.value("message", "Failed to toggle category visibility") << "\n";
+        }
+    } catch (const std::exception& e) {
+        std::cout << "Failed to toggle category visibility: " << e.what() << "\n";
+    }
 }
 
 void AdminMenu::displayNotifications() {
-    // Implement logic to display notifications
-    std::cout << "Displaying notifications (not yet implemented).\n";
+    std::string resStr = httpClient.get("/admin/notifications");
+    try {
+        auto response = json::parse(resStr);
+        if (!response["success"]) {
+            std::cout << "Error: " << response.value("message", "Unknown error") << "\n";
+            return;
+        }
+        auto data = response["data"];
+        if (data.empty()) {
+            std::cout << "No notifications found.\n";
+            return;
+        }
+        std::cout << "\nNotifications:\n";
+        std::cout << "+----+------------------+--------------------------------+------------------+\n";
+        std::cout << "| ID | Type             | Message                        | Timestamp        |\n";
+        std::cout << "+----+------------------+--------------------------------+------------------+\n";
+        for (const auto& notification : data) {
+            std::cout << "| "
+                      << std::setw(2) << notification["id"] << " | "
+                      << std::setw(16) << notification["type"].get<std::string>().substr(0,16) << " | "
+                      << std::setw(30) << notification["message"].get<std::string>().substr(0,30) << " | "
+                      << std::setw(16) << notification["timestamp"].get<std::string>().substr(0,16) << " |\n";
+        }
+        std::cout << "+----+------------------+--------------------------------+------------------+\n";
+    } catch (const std::exception& e) {
+        std::cout << "Failed to parse notifications: " << e.what() << "\n";
+    }
 }

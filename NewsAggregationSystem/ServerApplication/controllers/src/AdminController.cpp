@@ -116,10 +116,10 @@ crow::response AdminController::getReportedArticles(const crow::request& req, st
     try {
         auto conn = dbConn->getConnection();
         std::string query = R"(
-            SELECT a.id, a.title, a.is_hidden, COUNT(r.id) as report_count
+            SELECT a.id, a.title, COUNT(r.id) as report_count
             FROM articles a
             LEFT JOIN reports r ON a.id = r.article_id
-            GROUP BY a.id, a.title, a.is_hidden
+            GROUP BY a.id, a.title
             HAVING report_count > 0
             ORDER BY report_count DESC
         )";
@@ -130,7 +130,6 @@ crow::response AdminController::getReportedArticles(const crow::request& req, st
             result.push_back(nlohmann::json{
                 {"id", rs->getInt("id")},
                 {"title", rs->getString("title")},
-                {"is_hidden", rs->getBoolean("is_hidden")},
                 {"report_count", rs->getInt("report_count")}
             });
         }
@@ -154,10 +153,7 @@ crow::response AdminController::hideArticle(const crow::request& req, std::share
         }
         int articleId = body["article_id"];
         auto conn = dbConn->getConnection();
-        std::unique_ptr<sql::PreparedStatement> stmt(conn->prepareStatement("UPDATE articles SET is_hidden = TRUE WHERE id = ?"));
-        stmt->setInt(1, articleId);
-        stmt->executeUpdate();
-        json response = {{"success", true}, {"message", "Article hidden successfully"}};
+        json response = {{"success", true}, {"message", "Article hiding is disabled"}};
         std::cout << "[AdminController] hideArticle success" << std::endl;
         return crow::response(200, response.dump());
     } catch (const std::exception& e) {
@@ -177,10 +173,7 @@ crow::response AdminController::unhideArticle(const crow::request& req, std::sha
         }
         int articleId = body["article_id"];
         auto conn = dbConn->getConnection();
-        std::unique_ptr<sql::PreparedStatement> stmt(conn->prepareStatement("UPDATE articles SET is_hidden = FALSE WHERE id = ?"));
-        stmt->setInt(1, articleId);
-        stmt->executeUpdate();
-        json response = {{"success", true}, {"message", "Article unhidden successfully"}};
+        json response = {{"success", true}, {"message", "Article unhiding is disabled"}};
         std::cout << "[AdminController] unhideArticle success" << std::endl;
         return crow::response(200, response.dump());
     } catch (const std::exception& e) {

@@ -15,4 +15,5 @@ private:
     void displaySavedArticles();
     void displaySearch();
     void displayNotifications();
+    void displayPersonalizedContent();
 };

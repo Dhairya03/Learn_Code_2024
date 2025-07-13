@@ -5,8 +5,13 @@
 #include "controllers/inc/SavedArticleController.h"
 #include "controllers/inc/AdminController.h"
 #include "controllers/inc/NotificationController.h"
+#include "controllers/inc/ReactionController.h"
+#include "controllers/inc/PersonalizationController.h"
+#include "controllers/inc/CategoryController.h"
+#include "controllers/inc/CategoryController.h"
 #include "database/inc/DBConnection.h"
 #include "jobs/inc/NewsFetchJob.h"
+#include "jobs/inc/MultiApiNewsFetchJob.h"
 #include "utils/NewsApiOrgAdapter.h"
 #include "utils/TheNewsApiAdapter.h"
 #include <thread>
@@ -15,26 +20,12 @@
 
 void startNewsFetcher(std::shared_ptr<DBConnection> dbConn) {
     std::thread([dbConn]() {
-        std::string apiKey1 = "8f4cda27870e4de79de71ec7876d3733"; // NewsApiOrg
-        std::string apiKey2 = "PLFrdIv6ewEpzWbUrL2MXBn5Z6ZtD7AAuD5rUUhY"; // TheNewsApi
-        bool useFirst = true;
         while (true) {
-            std::unique_ptr<INewsApiAdapter> adapter;
-            if (useFirst) {
-                std::cout << "[startNewsFetcher] Using NewsApiOrgAdapter" << std::endl;
-                adapter = std::make_unique<NewsApiOrgAdapter>(apiKey1);
-            } else {
-                std::cout << "[startNewsFetcher] Using TheNewsApiAdapter" << std::endl;
-                adapter = std::make_unique<TheNewsApiAdapter>(apiKey2);
-            }
-            NewsFetchJob job(dbConn, std::move(adapter));
+            std::cout << "[startNewsFetcher] Starting multi-API news fetch job..." << std::endl;
+            MultiApiNewsFetchJob job(dbConn);
             job.run();
-            // Check if articles were fetched (by checking DB or logs). For now, alternate if no articles fetched.
-            // In a real system, you might want to check the return value or DB state.
-            // Here, we alternate if the last fetch failed (simulate by checking logs or a flag).
-            // For simplicity, alternate every time for now:
-            useFirst = !useFirst;
-            std::this_thread::sleep_for(std::chrono::minutes(10));
+            std::cout << "[startNewsFetcher] Multi-API fetch completed, sleeping for 3 hours..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::hours(3));
         }
     }).detach();
 }
@@ -116,7 +107,6 @@ int main() {
         return AdminController::addCategory(req, dbConn);
     });
 
-    // Notification routes
     CROW_ROUTE(app, "/notifications").methods("GET"_method)
     ([dbConn](const crow::request& req) {
         return NotificationController::getNotifications(req, dbConn);
@@ -180,6 +170,81 @@ int main() {
     CROW_ROUTE(app, "/admin/unhide_category").methods("POST"_method)
     ([dbConn](const crow::request& req) {
         return AdminController::unhideCategory(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/like").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return ReactionController::likeArticle(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/dislike").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return ReactionController::dislikeArticle(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/reaction/remove").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return ReactionController::removeReaction(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/reaction/user").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return ReactionController::getUserReaction(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/reactions").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return ReactionController::getArticleReactions(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/personalized").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::getPersonalizedArticles(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/recommended").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::getRecommendedArticles(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/trending").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::getTrendingArticles(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/track-view").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::trackArticleView(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/articles/track-interaction").methods("POST"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::trackArticleInteraction(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/user/interests").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::getUserInterests(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/user/recommended-categories").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return PersonalizationController::getRecommendedCategories(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/categories").methods("GET"_method)
+    ([dbConn](const crow::request& req) {
+        return CategoryController::getAllCategories(req, dbConn);
+    });
+
+    CROW_ROUTE(app, "/categories/<int>").methods("GET"_method)
+    ([dbConn](const crow::request& req, int categoryId) {
+        return CategoryController::getCategoryById(req, dbConn, categoryId);
+    });
+
+    CROW_ROUTE(app, "/categories/name/<string>").methods("GET"_method)
+    ([dbConn](const crow::request& req, const std::string& categoryName) {
+        return CategoryController::getCategoryByName(req, dbConn, categoryName);
     });
 
     startNewsFetcher(dbConn);

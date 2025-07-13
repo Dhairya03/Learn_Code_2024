@@ -15,6 +15,12 @@ std::string Client::get(const std::string& endpoint) {
     return res && res->status == 200 ? res->body : "{\"success\":false,\"message\":\"Server error\"}";
 }
 
+std::string Client::put(const std::string& endpoint, const std::string& bodyJson) {
+    httplib::Client cli(baseUrl.c_str());
+    auto res = cli.Put(endpoint.c_str(), bodyJson, "application/json");
+    return res && res->status == 200 ? res->body : "{\"success\":false,\"message\":\"Server error\"}";
+}
+
 std::string Client::delete_(const std::string& endpoint) {
     httplib::Client cli(baseUrl.c_str());
     auto res = cli.Delete(endpoint.c_str());

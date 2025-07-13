@@ -8,6 +8,7 @@ public:
     explicit Client(const std::string& baseUrl);
     std::string post(const std::string& endpoint, const std::string& bodyJson);
     std::string get(const std::string& endpoint);
+    std::string put(const std::string& endpoint, const std::string& bodyJson);
     std::string delete_(const std::string& endpoint);
 private:
     std::string baseUrl;

@@ -86,6 +86,24 @@ bool NotificationService::updateCategorySettings(int userId, int categoryId, boo
     }
 }
 
+bool NotificationService::updateCategorySettings(int userId, const std::string& categoryName, bool enabled) {
+    try {
+        json body = {
+            {"user_id", userId},
+            {"category_name", categoryName},
+            {"enabled", enabled}
+        };
+        
+        std::string response = client.post("/notifications/configure/category", body.dump());
+        
+        auto responseJson = json::parse(response);
+        return responseJson.contains("message");
+    } catch (const std::exception& e) {
+        std::cerr << "Error updating category settings: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool NotificationService::updateKeywords(int userId, const std::string& keywords) {
     try {
         json body = {

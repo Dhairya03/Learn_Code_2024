@@ -15,18 +15,6 @@ void NewsArticleRepository::createTablesIfNotExist()
     auto conn = db->getConnection();
     try
     {
-        std::string addIsHiddenColumn = R"(
-            ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE
-        )";
-        try
-        {
-            auto stmt = conn->createStatement();
-            stmt->execute(addIsHiddenColumn);
-        }
-        catch (const sql::SQLException &e)
-        {
-            std::cerr << "[NewsArticleRepository] Error adding is_hidden column: " << e.what() << std::endl;
-        }
         std::string createReportsTable = R"(
             CREATE TABLE IF NOT EXISTS reports (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -356,19 +344,35 @@ std::vector<NewsArticle> NewsArticleRepository::getArticlesByDateAndCategory(con
     try
     {
         auto conn = db->getConnection();
-        std::unique_ptr<sql::PreparedStatement> stmt(
-            conn->prepareStatement(
-                "SELECT a.id, a.title, a.description, a.url, a.source, a.published_at "
-                "FROM articles a "
-                "JOIN categories c ON a.category_id = c.id "
-                "WHERE c.name = ? "
-                "AND a.published_at >= ? "
-                "AND a.published_at <= ? "
-                "ORDER BY a.published_at DESC"));
+        std::string sql;
+        
+        if (categoryName == "all") {
+            sql = "SELECT a.id, a.title, a.description, a.url, a.source, a.published_at, a.category_id, c.name as category_name, a.likes, a.dislikes "
+                  "FROM articles a "
+                  "LEFT JOIN categories c ON a.category_id = c.id "
+                  "WHERE a.published_at >= ? "
+                  "AND a.published_at <= ? "
+                  "ORDER BY a.published_at DESC";
+        } else {
+            sql = "SELECT a.id, a.title, a.description, a.url, a.source, a.published_at, a.category_id, c.name as category_name, a.likes, a.dislikes "
+                  "FROM articles a "
+                  "JOIN categories c ON a.category_id = c.id "
+                  "WHERE c.name = ? "
+                  "AND a.published_at >= ? "
+                  "AND a.published_at <= ? "
+                  "ORDER BY a.published_at DESC";
+        }
 
-        stmt->setString(1, categoryName);
-        stmt->setString(2, startDate);
-        stmt->setString(3, endDate);
+        std::unique_ptr<sql::PreparedStatement> stmt(conn->prepareStatement(sql));
+        
+        if (categoryName == "all") {
+            stmt->setString(1, startDate);
+            stmt->setString(2, endDate);
+        } else {
+            stmt->setString(1, categoryName);
+            stmt->setString(2, startDate);
+            stmt->setString(3, endDate);
+        }
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
 
@@ -381,6 +385,10 @@ std::vector<NewsArticle> NewsArticleRepository::getArticlesByDateAndCategory(con
             article.url = res->getString("url");
             article.source = res->getString("source");
             article.publishedAt = res->getString("published_at");
+            article.categoryId = res->getInt("category_id");
+            article.categoryName = res->getString("category_name");
+            article.likes = res->getInt("likes");
+            article.dislikes = res->getInt("dislikes");
 
             articles.push_back(article);
         }

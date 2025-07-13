@@ -11,7 +11,6 @@
 
 using json = nlohmann::json;
 
-// Helper function for serializing a NewsArticle to JSON
 static nlohmann::json serializeArticle(const NewsArticle& article) {
     nlohmann::json articleJson = {
         {"id", article.id},
@@ -164,19 +163,12 @@ crow::response NewsController::reportArticle(const crow::request& req, std::shar
         }
         std::cout << "[NewsController] Article " << articleId << " has " << reportCount << " reports" << std::endl;
         if (reportCount >= reportThreshold) {
-            std::unique_ptr<sql::PreparedStatement> hideArticleStmt(
-                dbConnection->prepareStatement("UPDATE articles SET is_hidden = TRUE WHERE id = ?")
-            );
-            hideArticleStmt->setInt(1, articleId);
-            hideArticleStmt->execute();
-            std::cout << "[NewsController] Article " << articleId << " auto-hidden due to report threshold" << std::endl;
+            std::cout << "[NewsController] Article " << articleId << " reached report threshold but hiding is disabled" << std::endl;
         }
-        // Notify all admins
         UserRepository userRepository(dbConn);
         NotificationRepository notificationRepository(dbConn);
         auto adminUsers = userRepository.getAllAdmins();
         std::string articleTitle;
-        // Fetch article title for notification
         try {
             std::unique_ptr<sql::PreparedStatement> getTitleStmt(
                 dbConnection->prepareStatement("SELECT title FROM articles WHERE id = ?")

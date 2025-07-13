@@ -1,6 +1,9 @@
 #include "../inc/HeadlinesMenu.h"
 #include "../../Services/inc/ArticleService.h"
 #include "../../Services/inc/SavedArticleService.h"
+#include "../../Services/inc/ReactionService.h"
+#include "../../Services/inc/PersonalizationService.h"
+#include "../../Services/inc/CategoryService.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <iomanip>
@@ -43,20 +46,27 @@ void HeadlinesMenu::displayDateRangeHeadlines() {
 }
 
 std::string HeadlinesMenu::selectHeadlineCategory() {
-    std::cout << "\nPlease choose the options below for Headlines:\n"
-              << "1. All\n2. Business\n3. Entertainment\n4. Sports\n5. Technology\n6. General\n>> ";
+    CategoryService categoryService(httpClient);
+    auto categories = categoryService.getAllCategories();
+    
+    std::vector<std::string> allOptions = {"all"};
+    allOptions.insert(allOptions.end(), categories.begin(), categories.end());
+    
+    std::cout << "\nPlease choose the options below for Headlines:\n";
+    for (size_t i = 0; i < allOptions.size(); ++i) {
+        std::cout << (i + 1) << ". " << allOptions[i] << "\n";
+    }
+    std::cout << ">> ";
+    
     int opt;
     std::cin >> opt;
     std::cin.ignore();
-
-    switch (opt) {
-        case 1: return "all";
-        case 2: return "business";
-        case 3: return "entertainment";
-        case 4: return "sports";
-        case 5: return "technology";
-        case 6: return "general";
-        default: return "all";
+    
+    if (opt >= 1 && opt <= static_cast<int>(allOptions.size())) {
+        return allOptions[opt - 1];
+    } else {
+        std::cout << "Invalid option, defaulting to 'all'\n";
+        return "all";
     }
 }
 
@@ -78,7 +88,7 @@ void HeadlinesMenu::fetchAndDisplayArticlesTable(const std::string& start, const
         }
         std::cout << "+-----+----------------------------------------------------------+-------------------+--------------+------------------------------------------+\n";
     }
-    std::cout << "1. Back\n2. Logout\n3. Save Article\n4. Like Article\n5. Dislike Article\n6. Report Article\n>> ";
+    std::cout << "1. Back\n2. Logout\n3. Save Article\n4. Like Article\n5. Dislike Article\n6. Remove Reaction\n7. Report Article\n>> ";
     int action;
     std::cin >> action;
     std::cin.ignore();
@@ -89,19 +99,28 @@ void HeadlinesMenu::fetchAndDisplayArticlesTable(const std::string& start, const
         std::cin >> id;
         std::cin.ignore();
         SavedArticleService(httpClient, userSession).saveArticle(id);
+        PersonalizationService(httpClient, userSession).trackArticleInteraction(id, "save");
     } else if (action == 4) {
         int id;
         std::cout << "Enter Article ID to like: ";
         std::cin >> id;
         std::cin.ignore();
-        std::cout << "Liked Article ID: " << id << " (stub, backend not implemented yet)\n";
+        ReactionService(httpClient, userSession).likeArticle(id);
+        PersonalizationService(httpClient, userSession).trackArticleInteraction(id, "like");
     } else if (action == 5) {
         int id;
         std::cout << "Enter Article ID to dislike: ";
         std::cin >> id;
         std::cin.ignore();
-        std::cout << "Disliked Article ID: " << id << " (stub, backend not implemented yet)\n";
+        ReactionService(httpClient, userSession).dislikeArticle(id);
+        PersonalizationService(httpClient, userSession).trackArticleInteraction(id, "dislike");
     } else if (action == 6) {
+        int id;
+        std::cout << "Enter Article ID to remove reaction: ";
+        std::cin >> id;
+        std::cin.ignore();
+        ReactionService(httpClient, userSession).removeReaction(id);
+    } else if (action == 7) {
         int id;
         std::cout << "Enter Article ID to report: ";
         std::cin >> id;

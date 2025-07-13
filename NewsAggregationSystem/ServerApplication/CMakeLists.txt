@@ -32,8 +32,19 @@ file(GLOB_RECURSE SERVER_HEADERS
 add_executable(server_main
     main.cpp
     jobs/src/NewsFetchJob.cpp
+    jobs/src/MultiApiNewsFetchJob.cpp
     utils/NewsApiOrgAdapter.cpp
     utils/TheNewsApiAdapter.cpp
+    utils/NewsApiAdapterFactory.cpp
+    controllers/src/ReactionController.cpp
+    services/src/ReactionService.cpp
+    repositories/src/ArticleReactionRepository.cpp
+    controllers/src/PersonalizationController.cpp
+    services/src/PersonalizationService.cpp
+    repositories/src/UserPreferenceRepository.cpp
+    models/src/UserPreference.cpp
+    controllers/src/CategoryController.cpp
+    controllers/src/CategoryController.cpp
     ${SERVER_SOURCES}
 )
 

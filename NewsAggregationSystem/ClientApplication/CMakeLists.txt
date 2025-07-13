@@ -22,7 +22,12 @@ file(GLOB_RECURSE CLIENT_HEADERS
 )
 
 # Create target
-add_executable(client_main main.cpp ${CLIENT_SOURCES})
+add_executable(client_main 
+    main.cpp 
+    Services/src/ReactionService.cpp
+    Services/src/CategoryService.cpp
+    ${CLIENT_SOURCES}
+)
 
 # Include directories
 target_include_directories(client_main PRIVATE
